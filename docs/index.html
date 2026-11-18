@@ -308,6 +308,11 @@ function gradeCard(p, line, S, mode) {
         ${tileHTML("clutch", "Overall", line, true)}</div></div>
     <div class="tiles">${rowCats.map(r => `<div class="tilerow">${r.map(c => tileHTML(c.key, c.label, line)).join("")}</div>`).join("")}</div></div>`;
 }
+function gradeNote(S, mode) {
+  return mode === "post" && S.post_pool
+    ? `Percentile among ${S.post_pool} postseason hitters with ${S.post_min}+ PA. Small samples are pulled toward average first.`
+    : `Percentile among ${S.qualified} hitters with ${S.min_pa}+ PA. Small samples are pulled toward average first.`;
+}
 function legendHTML(note) {
   return `<div class="legendrow"><span>${esc(note)}</span>${META.tiers.map(([c, g], i) => {
     const hi = i === 0 ? "" : `–${META.tiers[i - 1][0] - 1}`; return `<span class="pill g g${g}">${g} ${c}${i === 0 ? "+" : hi}</span>`; }).join("")}</div>`;
@@ -383,7 +388,7 @@ async function viewLeaders() {
       <label>Team <select class="btn" id="lbteam"><option value="">All</option>${teams.map(t => `<option ${t === LB.team ? "selected" : ""}>${esc(t)}</option>`).join("")}</select></label>
       <input type="search" id="lbq" placeholder="Filter by name" value="${esc(LB.q)}" aria-label="Filter by name">
     </div>
-    ${legendHTML(`Grades are percentiles among ${S.qualified} hitters with ${S.min_pa}+ PA.`)}
+    ${legendHTML(gradeNote(S, mode))}
     <div class="tablewrap"><table class="lt"><thead><tr><th class="l">#</th><th class="l">Batter</th>${th("pa", "PA")}${th("total", "Total")}
       ${cats.map(c => th(c.key, c.label === "Run production" ? "Runs" : c.label === "Base stealing" ? "Steal" : c.label === "Consistency" ? "Cons." : c.label, "c")).join("")}</tr></thead>
     <tbody>${rows.map((p, i) => { const l = p[mode]; return `<tr class="${isFollowed(p.id) ? "mine" : ""}"><td class="l num">${i + 1}</td>
@@ -487,7 +492,7 @@ async function viewPlayer(id) {
   let html = `<div class="ctl"><a href="#leaders">← Leaderboard</a><span style="flex:1"></span>
     ${P.post && P.reg ? `<div class="seg" role="group" aria-label="Season type"><button type="button" data-pm="reg" aria-pressed="${mode === "reg"}">Regular season</button><button type="button" data-pm="post" aria-pressed="${mode === "post"}">Postseason</button></div>` : ""}
     <button class="btn ${isFollowed(id) ? "" : "primary"}" id="fol" type="button">${isFollowed(id) ? "Following ✓" : "Follow"}</button></div>`;
-  html += line ? gradeCard(P, line, S, mode) + legendHTML(`Percentile among ${S.qualified} hitters with ${S.min_pa}+ PA.`)
+  html += line ? gradeCard(P, line, S, mode) + legendHTML(gradeNote(S, mode))
     : `<div class="card empty">Fewer than ${META.min_show} PA this season, so no grades. Game log below.</div>`;
   if (games.length) {
     html += `<section><h2>Game by game</h2><div class="chartbox">${barChart(games)}
@@ -600,6 +605,7 @@ Season total = sum of every PA's score</div></section>
       <div class="label" style="margin-top:8px">Result values used</div>${wl(Object.entries(w.result || {}).sort((a, b) => b[1] - a[1]).map(([k, v]) => [k.replace(/_/g, " "), v]))}</section>
     <section><h2>7. Base stealing (separate grade)</h2>${wl(steal)}<div class="note">Break-even success rate stealing 2nd: about 71%.</div></section>
     <section><h2>Grades</h2>${legendHTML("Percentile among qualified hitters (300+ PA) that season:")}
+      <div class="prose"><p>Before ranking, each number is pulled toward the league average by PA ÷ (PA + 200), so a hot 50 PA can't grade like a full season. A 50-PA line keeps 20% of its gap from average, 100 PA a third, 650 PA about three quarters. Luck is ranked on its raw value. Postseason grades rank against other postseason hitters with 20+ PA, with the same pull.</p></div>
       ${wl(META.cats.map(c => [c.label, cdef[c.key] || ""]))}
       <div class="label" style="margin-top:8px">Game grades (percentile of every batter's games)</div>${wl(META.game_cuts.map(([g, c]) => [g, `${sgn(c, 1)} or better`]))}</section>`;
 }

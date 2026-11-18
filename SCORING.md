@@ -199,7 +199,15 @@ Pickoff errors (runner advances) don't count. Counts match MLB's official SB/CS 
 | Clutch | Clutch gap |
 | QAB% / Consistency | Section 9 |
 
-Tiers (percentile among 300+ PA hitters that season): S 97+, A 85–96, B 65–84, C 40–64, D 20–39, E 8–19, F 0–7.
+Tiers (percentile among 300+ PA hitters that season): S 98+, A 90–97, B 72–89, C 40–71, D 18–39, E 6–17, F 0–5.
+
+**Small-sample pull.** Before ranking, every category value is pulled toward the qualified median by
+PA ÷ (PA + 200), and the qualified pool is pulled the same way before the cut lines are set. So 50 PA keeps
+20% of its distance from average, 100 PA a third, 300 PA 60%, 650 PA about 76%. Regulars barely move;
+hot or cold small samples land near C. Luck is ranked on its raw value.
+
+**Postseason** lines are ranked against that postseason's hitters with 20+ PA (same pull toward the
+regular-season median). Game grades use the same tiers, as percentiles of every regular-season player-game.
 
 ## 9. Consistency (separate stats)
 
@@ -209,7 +217,7 @@ Tiers (percentile among 300+ PA hitters that season): S 97+, A 85–96, B 65–8
 ## 10. Displays
 
 - Season: Clutch score per PA, Quality per PA, Clutch gap, QAB%, Consistency %, Baserunning; rating 100 = league average.
-- Grades by percentile: A+ 96–100, A 90–95, B+ 80–89, B 70–79, C+ 60–69, C 50–59, D+ 40–49, D 25–39, F 0–24.
+- Grades S to F by percentile (section 8).
 - Regular season and postseason have separate leaderboards. Minimums: 15+ PA for season averages, 300 PA default leaderboard.
 - Position players pitching: those PAs are dropped.
 

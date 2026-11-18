@@ -12,11 +12,12 @@ import collections, json, os, shutil, statistics as st, time
 from datetime import datetime, timezone
 from calibrate import load, run_values
 from score import load_weights, score_v8, people, ROOT
-from grades import CATS, TIERS, MIN_PA, NON_CONTACT, grade, line, steal_counts
+from grades import CATS, TIERS, MIN_PA, NON_CONTACT, grade, line, steal_counts, pulled, ranking, pct_of
 from fetch_pbp import get, API
 
 SITE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "docs", "data")
 MIN_SHOW = 15
+POST_MIN = 20     # postseason PA to be in the postseason grading pool
 HITS = {"single": "1B", "double": "2B", "triple": "3B", "home_run": "HR"}
 NOT_AB = {"walk", "intent_walk", "hit_by_pitch", "catcher_interf", "sac_fly", "sac_bunt", "sac_fly_double_play",
           "sac_bunt_double_play"}
@@ -32,10 +33,6 @@ def luck_label(p):
 def r(v, n=2):
     return None if v is None else round(v, n)
 
-
-def pct_of(vals, x):
-    n = len(vals)
-    return 50 if n < 2 else max(0, min(100, round(100 * sum(v < x for v in vals) / (n - 1))))
 
 
 def game_line(xs):
@@ -97,14 +94,20 @@ def main():
         reg = {b: [x for x in xs if x["gtype"] == "R"] for b, xs in mine.items()}
         lines = {b: line(xs, steals.get(b, {}), W) for b, xs in reg.items() if xs}
         qual = [l for l in lines.values() if l["pa"] >= MIN_PA]
-        dist = {k: sorted(l[k] for l in qual) for k, _, _ in CATS}
+        med, rank = ranking(qual)
+        dist = {k: sorted(l[k] for l in qual) for k, _, _ in CATS}   # raw values, for the cut lines shown
         cuts = {k: [[g, r(dist[k][min(len(dist[k]) - 1, round(c / 100 * (len(dist[k]) - 1)))], 3)] for c, g in TIERS]
                 for k, _, _ in CATS}
 
-        def graded(l):
+        # postseason lines are ranked against other postseason hitters (same pull toward the regular-season median)
+        post_lines = {b: line(px, {}, W) for b, xs in mine.items() if (px := [x for x in xs if x["gtype"] != "R"])}
+        post_pool = [l for l in post_lines.values() if l["pa"] >= POST_MIN]
+        post_rank = {k: sorted(pulled(l, k, med) for l in post_pool) for k, _, _ in CATS}
+
+        def graded(l, rank=rank):
             o = dict(pa=l["pa"], total=r(l["total"], 1), sb=l["sb"], cs=l["cs"], po=l["po"], hx=r(l["hits_vs_x"], 1))
             for k, _, _ in CATS:
-                p = pct_of(dist[k], l[k])
+                p = pct_of(rank[k], pulled(l, k, med))
                 o[k] = r(l[k], 3); o[k + "_p"] = p; o[k + "_g"] = luck_label(p) if k == "luck" else grade(p)
             return o
 
@@ -122,10 +125,8 @@ def main():
             row = dict(id=b, name=name, team=team, ops=(bat.get(b) or {}).get("ops"))
             if b in lines and lines[b]["pa"] >= MIN_SHOW:
                 row["reg"] = graded(lines[b])
-            post = [x for x in xs if x["gtype"] != "R"]
-            if post:
-                pl = line(post, {}, W)
-                pg = graded(pl)
+            if b in post_lines:
+                pg = graded(post_lines[b], post_rank if len(post_pool) >= 20 else rank)
                 pg.pop("steal", None); pg.pop("steal_p", None); pg.pop("steal_g", None)
                 row["post"] = pg
             if "reg" in row or "post" in row:
@@ -150,7 +151,7 @@ def main():
         with open(os.path.join(SITE, f"season-{yr}.json"), "w") as f:
             ld = dist["luck"]
             luck_cuts = [[n, r(ld[min(len(ld) - 1, round(c / 100 * (len(ld) - 1)))], 1)] for c, n in LUCK]
-            json.dump(dict(season=yr, min_pa=MIN_PA, avg_total=r(lg_total, 1), qualified=len(qual), cuts=cuts, luck_cuts=luck_cuts,
+            json.dump(dict(season=yr, min_pa=MIN_PA, post_min=POST_MIN, post_pool=len(post_pool), avg_total=r(lg_total, 1), qualified=len(qual), cuts=cuts, luck_cuts=luck_cuts,
                            players=players), f, separators=(",", ":"))
         out_seasons.append(yr)
         print(f"{yr}: {len(players)} batters, {len(qual)} qualified ({time.time() - t0:.0f}s)", flush=True)

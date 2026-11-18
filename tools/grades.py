@@ -2,7 +2,9 @@
 """Season totals and S-F letter grades for every category. Usage: python3 tools/grades.py [2026]
 
 Grades are percentiles among qualified hitters (300+ PA) in that season:
-  S 97-100 · A 85-96 · B 65-84 · C 40-64 · D 20-39 · E 8-19 · F 0-7
+  S 98-100 · A 90-97 · B 72-89 · C 40-71 · D 18-39 · E 6-17 · F 0-5
+Before ranking, every rate is pulled toward the qualified median by PA / (PA + 200), so small samples
+can't grade like full seasons (Luck is ranked on its raw value).
 Writes data/grades-<season>.json.
 """
 import collections, glob, gzip, json, os, statistics as st, sys
@@ -10,7 +12,9 @@ from calibrate import load, run_values
 from score import load_weights, score_v8, people, ROOT
 
 MIN_PA = 300
-TIERS = [(97, "S"), (85, "A"), (65, "B"), (40, "C"), (20, "D"), (8, "E"), (0, "F")]
+TIERS = [(98, "S"), (90, "A"), (72, "B"), (40, "C"), (18, "D"), (6, "E"), (0, "F")]
+PULL_K = 200        # PA of league-average performance added before ranking
+NO_PULL = {"luck"}
 NON_CONTACT = {"bb", "bb30", "ibb", "hbp", "ci", "k_swing", "k_look_in", "k_look_out"}
 CATS = [  # key, label, format
     ("clutch", "Overall", "{:+.2f}"), ("quality", "Quality", "{:+.2f}"), ("contact", "Contact", "{:.1f}%"),
@@ -22,6 +26,24 @@ CATS = [  # key, label, format
 
 def grade(p):
     return next(g for cut, g in TIERS if p >= cut)
+
+
+def pulled(l, k, med):
+    """A line's value for ranking: pulled toward the qualified median by PA / (PA + PULL_K)."""
+    if k in NO_PULL:
+        return l[k]
+    return med[k] + (l[k] - med[k]) * l["pa"] / (l["pa"] + PULL_K)
+
+
+def ranking(qual):
+    """Medians and sorted pulled values of the qualified lines, per category."""
+    med = {k: st.median(l[k] for l in qual) for k, _, _ in CATS}
+    return med, {k: sorted(pulled(l, k, med) for l in qual) for k, _, _ in CATS}
+
+
+def pct_of(vals, x):
+    n = len(vals)
+    return 50 if n < 2 else max(0, min(100, round(100 * sum(v < x for v in vals) / (n - 1))))
 
 
 def steal_key(why):
@@ -91,13 +113,10 @@ def main(yr):
     steals = steal_counts(yr)
     rows = {b: line(xs, steals.get(b, {}), W) for b, xs in by.items() if b in bat}
     qual = {b: r for b, r in rows.items() if r["pa"] >= MIN_PA}
+    med, dist = ranking(list(qual.values()))
     for key, _, _ in CATS:
-        vals = sorted(r[key] for r in qual.values())
-        n = len(vals)
         for r in rows.values():
-            below = sum(v < r[key] for v in vals)
-            r[key + "_pct"] = round(100 * below / (n - 1)) if n > 1 else 50
-            r[key + "_pct"] = max(0, min(100, r[key + "_pct"]))
+            r[key + "_pct"] = pct_of(dist[key], pulled(r, key, med))
             r[key + "_grade"] = grade(r[key + "_pct"])
     for b, r in rows.items():
         r.update(name=bat[b]["name"], ops=bat[b]["ops"])
