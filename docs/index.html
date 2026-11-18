@@ -83,6 +83,16 @@ section { display: flex; flex-direction: column; gap: 10px; }
 .gC { --g-bg: var(--gC-bg); --g: var(--gC); } .gD { --g-bg: var(--gD-bg); --g: var(--gD); } .gE { --g-bg: var(--gE-bg); --g: var(--gE); }
 .gF { --g-bg: var(--gF-bg); --g: var(--gF); }
 .tile { border-radius: 8px; padding: 12px 6px; text-align: center; }
+.lk0 { --g-bg: #EF9F27; --g: #412402; } .lk1 { --g-bg: #FAC775; --g: #633806; } .lk2 { --g-bg: #FAEEDA; --g: #854F0B; }
+.lk3 { --g-bg: #F1EFE8; --g: #444441; } .lk4 { --g-bg: #E6F1FB; --g: #185FA5; } .lk5 { --g-bg: #B5D4F4; --g: #0C447C; } .lk6 { --g-bg: #26215C; --g: #CECBF6; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .lk0 { --g-bg: #854F0B; --g: #FAEEDA; } :root:not([data-theme="light"]) .lk1 { --g-bg: #633806; --g: #FAC775; }
+  :root:not([data-theme="light"]) .lk2 { --g-bg: #412402; --g: #FAC775; } :root:not([data-theme="light"]) .lk3 { --g-bg: #444441; --g: #D3D1C7; }
+  :root:not([data-theme="light"]) .lk4 { --g-bg: #042C53; --g: #85B7EB; } :root:not([data-theme="light"]) .lk5 { --g-bg: #0C447C; --g: #B5D4F4; }
+  :root:not([data-theme="light"]) .lk6 { --g-bg: #3C3489; --g: #EEEDFE; } }
+.tile .L.word { font-size: 18px; line-height: 1.1; min-height: 1.9em; display: flex; align-items: center; justify-content: center; overflow-wrap: anywhere; }
+@media (max-width: 560px) { .tiles .tile .L.word { font-size: 11px; min-height: 2.6em; } .tile .per { display: none; } }
+@media (min-width: 900px) { .tile .L.word { font-size: 22px; min-height: 2.1em; } }
+.luckchip { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 7px; border-radius: 5px; white-space: nowrap; }
 .tile .k { font-size: 12px; } .tile .L { font-family: var(--font-display); font-size: 34px; font-weight: 700; line-height: 1.05; }
 .tile .v { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; } .tile .p { font-size: 11px; }
 .tiles { display: flex; flex-direction: column; gap: 8px; }
@@ -251,6 +261,7 @@ function fmtCat(key, v) {
   if (!c) return sgn(v);
   if (c.fmt.includes("%")) return Number(v).toFixed(c.fmt.includes(".1f") ? 1 : 0) + "%";
   if (key === "steal") return sgn(v, 1) + "/600";
+  if (key === "luck") return sgn(v, 1) + "/100";
   return sgn(v, 2);
 }
 function gameGrade(s) { for (const [g, cut] of META.game_cuts) if (s >= cut) return g; return "F"; }
@@ -268,7 +279,7 @@ const isFollowed = id => following.includes(id);
 function toggleFollow(id) { following = isFollowed(id) ? following.filter(x => x !== id) : [...following, id]; save("bb:following", following); }
 
 async function season(yr) { return getJSON(`data/season-${yr}.json`); }
-const PA_DEFAULTS = { t: 0, o: 0, b: 0, mg: 0, et: "", ek: "", p: 0, e: 0, rs: null, ab: 0, lg: 0, fp: 0, ru: 0, wo: 0, bs: 0, m: 1, li: null, pc: "", ev: null, la: null,
+const PA_DEFAULTS = { t: 0, o: 0, b: 0, mg: 0, et: "", ek: "", p: 0, e: 0, rs: null, lk: null, ab: 0, lg: 0, fp: 0, ru: 0, wo: 0, bs: 0, m: 1, li: null, pc: "", ev: null, la: null,
   rbi: 0, r2: 0, adv: 0, sr: 0, s3: 0, po: 0, q: 0 };
 async function playerLog(yr, id) {
   const log = await getJSON(`data/p/${yr}/${id}.json`);
@@ -281,11 +292,12 @@ function teamOf(p) { return p ? p.team : ""; }
 function tileHTML(key, label, line, big) {
   const g = line[key + "_g"], v = line[key], p = line[key + "_p"];
   if (g == null) return `<div class="tile gC"><div class="k">${esc(label)}</div><div class="L">–</div><div class="v">no data</div><div class="p">&nbsp;</div></div>`;
+  if (key === "luck") return `<div class="tile g ${lkClass(g)}" title="Luck: ${esc(fmtCat(key, v))} per 100 balls in play, ${line.hx != null ? sgn(line.hx, 0) + " hits vs. expected" : ""}"><div class="k">${esc(label)}</div><div class="L word">${esc(g)}</div><div class="v">${sgn(v, 1)}<span class="per">/100</span></div><div class="p">${line.hx != null ? sgn(line.hx, 0) + " hits vs exp." : ord(p) + " pct"}</div></div>`;
   return `<div class="tile g g${g}${big ? " ov" : ""}" title="${esc(label)}: ${esc(fmtCat(key, v))}, ${ord(p)} percentile"><div class="k">${esc(label)}</div><div class="L">${g}</div><div class="v">${esc(fmtCat(key, v))}${key === "clutch" ? "/PA" : ""}</div><div class="p">${ord(p)} pct</div></div>`;
 }
 function gradeCard(p, line, S, mode) {
   // Top row: how he hits. Bottom row: what it produced, in what spots, how often, plus running.
-  const ROWS = [["quality", "contact", "power", "results", "discipline", "grind"], ["runs", "gap", "qab", "cons", "steal"]];
+  const ROWS = [["quality", "contact", "power", "luck", "discipline", "grind"], ["runs", "gap", "qab", "cons", "steal"]];
   const rowCats = ROWS.map(r => r.map(k => META.cats.find(c => c.key === k)).filter(c => c && line[c.key + "_g"] != null));
   const sub = [p.team, `${line.pa} PA`, p.ops != null && mode === "reg" ? `${p.ops.toFixed(3)} OPS` : null,
     mode === "reg" ? `${line.sb} SB, ${line.cs} CS` : "Postseason"].filter(Boolean).join(" · ");
@@ -300,7 +312,11 @@ function legendHTML(note) {
   return `<div class="legendrow"><span>${esc(note)}</span>${META.tiers.map(([c, g], i) => {
     const hi = i === 0 ? "" : `–${META.tiers[i - 1][0] - 1}`; return `<span class="pill g g${g}">${g} ${c}${i === 0 ? "+" : hi}</span>`; }).join("")}</div>`;
 }
-function letter(g, title) { return g ? `<span class="letter g g${g}" title="${esc(title || "")}">${g}</span>` : `<span class="letter" style="color:var(--muted)">–</span>`; }
+const LUCK_NAMES = ["Miracle", "Very lucky", "Lucky", "Normal", "Unlucky", "Very unlucky", "Cursed"];
+const LUCK_SHORT = { "Very lucky": "V. lucky", "Very unlucky": "V. unlucky" };
+const lkClass = name => "lk" + Math.max(0, LUCK_NAMES.indexOf(name));
+function letter(g, title) {
+  if (g && g.length > 1) return `<span class="luckchip g ${lkClass(g)}" title="${esc(title || "")}">${esc(LUCK_SHORT[g] || g)}</span>`; return g ? `<span class="letter g g${g}" title="${esc(title || "")}">${g}</span>` : `<span class="letter" style="color:var(--muted)">–</span>`; }
 
 /* ---------- search ---------- */
 function searchBox(S, onPick, placeholder) {
@@ -430,7 +446,7 @@ function paDetail(pa) {
   if (pa.po) parts.push([`Runner put out (${pa.po} × ${sgn(r.putout)})`, pa.po * r.putout]);
   if (pa.wo) parts.push(["Walk-off", w.walkoff]);
   const hit = (pa.ev != null ? `<div class="note" style="margin-top:6px">Ball in play: ${pa.ev} mph, ${pa.la}°</div>` : "")
-    + (pa.rs != null ? `<div class="note">Result: ${esc(pa.et.replace(/_/g, " "))} (${sgn(pa.rs)}). Counts toward the Results grade only, not the score.</div>` : "");
+    + (pa.rs != null && pa.lk != null ? `<div class="note">Result: ${esc(pa.et.replace(/_/g, " "))} (${sgn(pa.rs)}). Contact like this usually earns ${sgn(pa.rs - pa.lk)}, so luck ${sgn(pa.lk)}. Counts toward Luck only, not the score.</div>` : "");
   return `<div class="detail"><div><div class="label" style="margin-bottom:6px">Pitch by pitch</div>
       <table><thead><tr><th class="l">#</th><th class="l">Count</th><th class="l">Location</th><th class="l">What he did</th><th>Pts</th></tr></thead><tbody>${prow}</tbody></table>${hit}</div>
     <div><div class="label" style="margin-bottom:6px">How the score adds up</div>
@@ -549,8 +565,8 @@ async function viewCompare() {
 function wireCompare() { document.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => { CMP = CMP.filter(x => x !== +b.dataset.rm); save("bb:cmp", CMP); viewCompare(); }); }
 
 /* ---------- scoring ---------- */
-function viewScoring() {
-  const w = META.weights, S = w.scale;
+async function viewScoring() {
+  const w = META.weights, S = w.scale, SS = await season(SEASON);
   const wl = obj => `<div class="weights">${obj.map(([k, v]) => `<div><span>${esc(k)}</span><span class="num ${cls(v)}">${typeof v === "number" ? sgn(v) : esc(v)}</span></div>`).join("")}</div>`;
   const contact = ["barrel+impact", "barrel", "hard ld+impact", "hard ld", "hard fb+impact", "hard fb", "hard gb", "med ld", "med", "weak ld", "weak gb", "weak fb", "popup", "bunt_hit", "bunt_out"];
   const other = ["bb", "hbp", "ci", "ibb", "k_swing", "k_look_in"];
@@ -558,7 +574,7 @@ function viewScoring() {
   const steal = [["Steal 2nd", w.steal.sb_2b], ["Steal 3rd", w.steal.sb_3b], ["Steal home", w.steal.sb_home], ["Caught stealing 2nd", w.steal.cs_2b], ["Caught stealing 3rd", w.steal.cs_3b], ["Caught stealing home", w.steal.cs_home], ["Picked off 1st", w.steal.po_1b], ["Picked off 2nd", w.steal.po_2b], ["Picked off 3rd", w.steal.po_3b]];
   const cdef = { clutch: "Clutch score per PA (everything, times the clutch multiplier)", quality: "Pitch points + ending + long-AB and first-pitch HR bonuses, per PA",
     contact: "Share of swings that make contact (bat-to-ball skill)", power: "Average contact grade per ball in play (barrels, hard-hit)",
-    results: "Average value of what his balls in play turned into: hits vs. outs (not in the score)",
+    luck: "How much better or worse his balls in play turned out than their contact deserved, per 100 (not in the score)",
     discipline: "Pitch decisions plus walks and strikeouts, per PA", grind: "Long-at-bat bonus per PA", runs: "Runner points per PA (RBIs, moving runners, stranding)",
     steal: "Steal points per 600 PA (separate from the season total)", gap: "Leverage-weighted average minus plain average: better or worse in big spots",
     qab: "Share of PAs that were quality at-bats: 7+ pitches, 95+ mph contact, a productive out, or Quality +0.5 or more", cons: "Share of games (2+ PA) where at least half his PAs were quality at-bats" };
@@ -573,14 +589,16 @@ Season total = sum of every PA's score</div></section>
       ${wl(pitchOrder.map(k => [PITCH_LABEL[k] || k, w.pitch[k]]))}</section>
     <section><h2>2. How it ends</h2><div class="prose"><p>A ball in play is graded on exit velocity and launch angle, not on whether it fell for a hit. That rewards the repeatable skill instead of luck.</p></div>
       <div class="label">Contact</div>${wl(contact.map(k => [EK[k], w.ending[k]]))}
-      <div class="prose" style="margin-top:8px"><p>Whether the ball fell for a hit isn't in the score. It's tracked separately as the Results grade: the average value of what his balls in play turned into. Power high and Results low means he's been unlucky.</p></div>
-      <div class="label">Results grade values (not in the score)</div>${wl(Object.entries(w.result || {}).sort((a, b) => b[1] - a[1]).map(([k, v]) => [k.replace(/_/g, " "), v]))}
+      <div class="prose" style="margin-top:8px"><p>Whether the ball fell for a hit isn't in the score. It's tracked separately as Luck (below).</p></div>
       <div class="label" style="margin-top:8px">Other endings</div>${wl(other.map(k => [EK[k], w.ending[k]]).concat([["Strikeout looking, off the plate", w.ending.k_look_in / 2], ["Strikeout swinging adds that pitch's whiff value", "+ whiff"]]))}</section>
     <section><h2>3. Good at-bats and bonuses</h2><div class="prose"><p>A quality at-bat never counts against him: 7 or more pitches, a ball hit 95+ mph, a productive out, or Quality of +0.5 or more. If one of those adds up to less than zero before runner points, it counts as zero.</p></div>${wl([["7-pitch at-bat", w.long.at7], ["Each pitch after 7", w.long.per_extra], ["First-pitch home run", w.fphr], ["Walk-off", w.walkoff]])}</section>
     <section><h2>4. Runners</h2><div class="prose"><p>Only movement the batter caused counts: no steals, wild pitches, pickoffs or errors. The automatic runner in extra innings isn't counted as stranded.</p></div>
       ${wl([["RBI, 0–1 outs", w.runner.rbi_lt2], ["RBI, 2 outs", w.runner.rbi_2], ["Each base a runner moves up", w.runner.adv_bases], ["Runner stranded (batter out)", w.runner.str_reg], ["Stranded on 3rd, fewer than 2 outs", w.runner.str3], ["Runner put out on the play", w.runner.putout]])}</section>
     <section><h2>5. Clutch multiplier</h2><div class="prose"><p>MLB's leverage index for the moment, square-rooted and divided by ${w.clutch.norm.toFixed(3)} so the average plate appearance is exactly ×1.00. Blowouts drop to about ×0.3; a tie game in the 9th is about ×1.8. Caps rise by inning: ×2.0 through the 6th, then ×2.1, ×2.2, ×2.3 in the 9th, ×2.4 in the 10th–11th, ×2.5 after. Floor ×0.25. Postseason ×${w.clutch.post} on top.</p></div></section>
-    <section><h2>6. Base stealing (separate grade)</h2>${wl(steal)}<div class="note">Break-even success rate stealing 2nd: about 71%.</div></section>
+    <section><h2>6. Luck (separate, not in the score)</h2><div class="prose"><p>Every ball in play is compared with what usually happens to a ball hit at that exit velocity and launch angle (3 mph × 4° buckets). A caught 97 mph line drive is bad luck; a bloop single is good luck. Luck is the total, per 100 balls in play, with hits vs. expected underneath. Labels are percentiles among ${SS.qualified} hitters with ${SS.min_pa}+ PA in ${SEASON}. Fast runners sit a little higher, because they beat out grounders.</p></div>
+      ${wl((SS.luck_cuts || []).map(([n, v], i) => [n, i === 0 ? `${sgn(v, 1)} or more` : i === SS.luck_cuts.length - 1 ? `below ${sgn(SS.luck_cuts[i - 1][1], 1)}` : `${sgn(v, 1)} to ${sgn(SS.luck_cuts[i - 1][1], 1)}`]))}
+      <div class="label" style="margin-top:8px">Result values used</div>${wl(Object.entries(w.result || {}).sort((a, b) => b[1] - a[1]).map(([k, v]) => [k.replace(/_/g, " "), v]))}</section>
+    <section><h2>7. Base stealing (separate grade)</h2>${wl(steal)}<div class="note">Break-even success rate stealing 2nd: about 71%.</div></section>
     <section><h2>Grades</h2>${legendHTML("Percentile among qualified hitters (300+ PA) that season:")}
       ${wl(META.cats.map(c => [c.label, cdef[c.key] || ""]))}
       <div class="label" style="margin-top:8px">Game grades (percentile of every batter's games)</div>${wl(META.game_cuts.map(([g, c]) => [g, `${sgn(c, 1)} or better`]))}</section>`;
@@ -599,7 +617,7 @@ async function route() {
     if (parts[0] === "leaders") await viewLeaders();
     else if (parts[0] === "player") await viewPlayer(+parts[1]);
     else if (parts[0] === "compare") await viewCompare();
-    else if (parts[0] === "scoring") viewScoring();
+    else if (parts[0] === "scoring") await viewScoring();
     else await viewHome();
     setStatus("");
   } catch (e) { console.error(e); setStatus("Couldn't load data: " + e.message, true); }

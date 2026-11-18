@@ -385,6 +385,11 @@ def score_v8(x, W):
     # Whether a ball in play fell for a hit is tracked separately (Results grade), not in the score
     bip = x["ek"] in SKILL_CONTACT
     result = W.get("result", {}).get(x["et"]) if bip else None
+    luck = xhit = None
+    if result is not None and "xres" in W:
+        xr = W["xres"].get(bin_key(x)) or W["xres_grp"].get(x["ek"])
+        if xr:
+            luck, xhit = result - xr[0], xr[1]
     hard = bip and (x.get("hit") or {}).get("ev") is not None and x["hit"]["ev"] >= 95
     qab = quality >= 0.5 or n >= 7 or hard or (x["batter_out"] and x["adv_bases"] > 0)
     at_bat = quality
@@ -399,9 +404,18 @@ def score_v8(x, W):
     if x["gtype"] != "R":
         m *= c["post"]
     m = max(0.25, min(m, inning_cap(x["inn"])))  # floor: even garbage time counts a little
-    x.update(pitch8=pitch, end8=end, result8=result, ab8=at_bat, long8=long, fphr8=fphr, quality=quality,
+    x.update(pitch8=pitch, end8=end, result8=result, luck8=luck, xhit8=xhit, ab8=at_bat, long8=long, fphr8=fphr, quality=quality,
              runner8=runner, base=base, m=m, score=base * m, qab=qab, bad=quality <= -1)
     return x
+
+
+def bin_key(x):
+    """Exit-velocity / launch-angle bucket (3 mph x 4 degrees) used for expected results."""
+    h = x.get("hit") or {}
+    ev, la = h.get("ev"), h.get("la")
+    if ev is None or la is None:
+        return None
+    return f"{int(min(max(ev, 40), 119) // 3)},{int(min(max(la, -60), 70) // 4)}"
 
 
 SKILL_CONTACT = {"barrel+impact", "barrel", "hard ld+impact", "hard ld", "hard fb+impact", "hard fb", "hard gb",

@@ -87,7 +87,7 @@
 | str3 | -0.341 | -1.54 | -1.81 |
 | putout | -0.528 | -2.39 | -2.52 |
 
-## Step 7: ball-in-play result values (net of runner points), used for half of the game score
+## Step 7: ball-in-play result values (net of runner points), used for the Luck grade
 | Result | Balls | Points |
 |---|---|---|
 | home_run | 11,123 | +3.30 |
@@ -101,6 +101,8 @@
 | fielders_choice_out | 582 | -1.14 |
 | sac_fly | 2,551 | -1.57 |
 | double_play | 750 | -1.71 |
+
+Expected-result buckets: 585 with 40+ balls (smaller buckets fall back to the contact grade)
 
 ## Step 8: preference bonuses
 Average 7-pitch strikeout before bonus: -1.21 → 7-pitch bonus +1.46 (nets about +0.25)

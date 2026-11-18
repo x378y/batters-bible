@@ -53,24 +53,34 @@ Why not use the fitted run values here: they reward luck (weak line drives +0.89
 hard fly balls −0.22 because warning-track outs). Grading the skill predicts next-season OPS at .358,
 grading the run value only .275.
 
-### Results grade (*data*, separate, not in the score)
+### Luck (*data*, separate, not in the score)
 
-Whether a ball in play fell for a hit doesn't change the score. It's its own grade, **Results**: the
-average value of what his balls in play turned into, net of runner points. Power high and Results low
-means he's been unlucky; the reverse means balls have been finding holes.
+Whether a ball in play fell for a hit doesn't change the score. It's measured separately as **Luck**:
+every ball in play is compared with what usually happens to a ball hit at that exit velocity and launch
+angle (3 mph × 4° buckets, 585 buckets with 40+ balls; smaller ones fall back to the contact grade).
 
-| Result | Value |
-|---|---|
-| Home run | +3.30 |
-| Triple | +2.90 |
-| Double | +1.97 |
-| Fielder's choice (batter safe) | +1.72 |
-| Single | +1.19 |
-| Force out | +0.52 |
-| Out in play | −0.80 |
-| Ground into double play | −1.03 |
-| Sac fly | −1.57 |
-| Reached on error | not counted |
+`luck = value of what it became − average value for that contact`, using these result values
+(net of runner points): HR +3.30, triple +2.90, double +1.97, fielder's choice (safe) +1.72, single +1.19,
+force out +0.52, out in play −0.80, GIDP −1.03, sac fly −1.57. Reaching on an error isn't counted.
+
+Example: a 97 mph line drive at 21° usually earns about +0.6. Caught (−0.80) → luck about −1.4.
+
+Shown per 100 balls in play, with **hits vs. expected** underneath, and a label by percentile among
+qualified hitters (not an S–F grade, because luck isn't a skill):
+
+| Label | Percentile | 2026 cut line (per 100 BIP) |
+|---|---|---|
+| Miracle | 97+ | +12.8 or more |
+| Very lucky | 85–96 | +8.2 |
+| Lucky | 65–84 | +3.6 |
+| Normal | 35–64 | −1.5 |
+| Unlucky | 15–34 | −5.6 |
+| Very unlucky | 3–14 | −10.8 |
+| Cursed | 0–2 | below −10.8 |
+
+Checks (2025–26): lucky hitters tend to get worse the next year (Luck vs. next-year OPS change −0.33);
+Luck is mostly independent of Power (−0.20). It repeats a little year to year (0.26), mainly because
+fast runners beat out grounders and slow ones don't.
 
 ### Other endings (*data*)
 
@@ -181,7 +191,7 @@ Pickoff errors (runner advances) don't count. Counts match MLB's official SB/CS 
 | Quality | Quality per PA |
 | Contact | Share of swings that make contact (bat-to-ball skill) |
 | Power | Average contact grade per ball in play (barrels, hard-hit) |
-| Results | Average value of what his balls in play turned into (hits vs. outs), not in the score |
+| Luck | Actual vs. expected results on balls in play, per 100, labelled Miracle to Cursed; not in the score |
 | Discipline | Pitch points + walk/strikeout points per PA |
 | Grind | Long-AB bonus per PA |
 | Run production | Runner points per PA |
@@ -214,7 +224,7 @@ Tiers (percentile among 300+ PA hitters that season): S 97+, A 85–96, B 65–8
 Clutch gap repeats very little (2025 vs 2026: .086). It describes who delivered this year, not a skill
 that carries over.
 
-v9 tried scoring contact 50/50 with the result; that was reverted in favour of a separate Results grade.
+v9 tried scoring contact 50/50 with the result; that was reverted in favour of a separate Luck stat.
 
 Removed in v8: pitcher multiplier (made scores less predictive at every strength tested), the 3-0 walk
 reduction (data showed no difference), the hand-built clutch table (replaced by leverage index).

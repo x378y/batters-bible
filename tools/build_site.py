@@ -22,6 +22,13 @@ NOT_AB = {"walk", "intent_walk", "hit_by_pitch", "catcher_interf", "sac_fly", "s
           "sac_bunt_double_play"}
 
 
+LUCK = [(97, "Miracle"), (85, "Very lucky"), (65, "Lucky"), (35, "Normal"), (15, "Unlucky"), (3, "Very unlucky"), (0, "Cursed")]
+
+
+def luck_label(p):
+    return next(name for cut, name in LUCK if p >= cut)
+
+
 def r(v, n=2):
     return None if v is None else round(v, n)
 
@@ -50,7 +57,7 @@ def pa_row(x):
     """One PA for the site. Zero / empty fields are left out to keep files small (the page fills them back in)."""
     h = x.get("hit") or {}
     full = dict(i=x["inn"], t=1 if x["top"] else 0, o=x["outs"], b=x["bmask"], mg=x["margin"], et=x["et"], ek=x["ek"],
-                n=x["n"], p=r(x["pitch8"]), e=r(x["end8"]), rs=r(x["result8"]), ab=r(x["ab8"]), lg=r(x["long8"]), fp=r(x["fphr8"]), ru=r(x["runner8"]),
+                n=x["n"], p=r(x["pitch8"]), e=r(x["end8"]), rs=r(x["result8"]), lk=r(x["luck8"]), ab=r(x["ab8"]), lg=r(x["long8"]), fp=r(x["fphr8"]), ru=r(x["runner8"]),
                 wo=1 if x["walkoff"] else 0, bs=r(x["base"]), m=r(x["m"]), s=r(x["score"]), li=x.get("li"),
                 pc="".join(f"{b}{s}{l}{o}" for b, s, l, o in x["pc"]), ev=h.get("ev"), la=h.get("la"),
                 rbi=x["rbi_lt2"] + x["rbi_2"], r2=x["rbi_2"], adv=x["adv_bases"], sr=x["str_reg"], s3=x["str3"],
@@ -95,10 +102,10 @@ def main():
                 for k, _, _ in CATS}
 
         def graded(l):
-            o = dict(pa=l["pa"], total=r(l["total"], 1), sb=l["sb"], cs=l["cs"], po=l["po"])
+            o = dict(pa=l["pa"], total=r(l["total"], 1), sb=l["sb"], cs=l["cs"], po=l["po"], hx=r(l["hits_vs_x"], 1))
             for k, _, _ in CATS:
                 p = pct_of(dist[k], l[k])
-                o[k] = r(l[k], 3); o[k + "_p"] = p; o[k + "_g"] = grade(p)
+                o[k] = r(l[k], 3); o[k + "_p"] = p; o[k + "_g"] = luck_label(p) if k == "luck" else grade(p)
             return o
 
         players = []
@@ -141,14 +148,16 @@ def main():
         players.sort(key=lambda p: -(p.get("reg") or {}).get("total", -1e9))
         lg_total = st.mean(l["total"] for l in qual)
         with open(os.path.join(SITE, f"season-{yr}.json"), "w") as f:
-            json.dump(dict(season=yr, min_pa=MIN_PA, avg_total=r(lg_total, 1), qualified=len(qual), cuts=cuts,
+            ld = dist["luck"]
+            luck_cuts = [[n, r(ld[min(len(ld) - 1, round(c / 100 * (len(ld) - 1)))], 1)] for c, n in LUCK]
+            json.dump(dict(season=yr, min_pa=MIN_PA, avg_total=r(lg_total, 1), qualified=len(qual), cuts=cuts, luck_cuts=luck_cuts,
                            players=players), f, separators=(",", ":"))
         out_seasons.append(yr)
         print(f"{yr}: {len(players)} batters, {len(qual)} qualified ({time.time() - t0:.0f}s)", flush=True)
 
     meta = dict(built=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"), seasons=out_seasons,
                 cats=[dict(key=k, label=l, fmt=f) for k, l, f in CATS], tiers=[[c, g] for c, g in TIERS],
-                game_cuts=game_cuts, min_pa=MIN_PA, min_show=MIN_SHOW,
+                game_cuts=game_cuts, min_pa=MIN_PA, min_show=MIN_SHOW, luck_bands=[[c, n] for c, n in LUCK],
                 weights=dict(scale=W["scale"], pitch=W["pitch"], ending=W["ending"], long=W["long"], fphr=W["fphr"],
                              runner=W["runner"], walkoff=W["walkoff"], clutch=W["clutch"], steal=W["steal"], result=W["result"],
                              re=W["re"], pas=W["pas"], seasons=W["seasons"]))

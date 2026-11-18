@@ -17,7 +17,7 @@ Process
 """
 import collections, json, os, statistics as st
 import numpy as np
-from score import raw_season, people, ROOT
+from score import raw_season, people, ROOT, bin_key
 
 SEASONS = (2025, 2026)
 SKILL_CONTACT = {"barrel+impact": 4.8, "barrel": 4.0, "hard ld+impact": 3.6, "hard ld": 3.0, "hard fb+impact": 2.4,
@@ -209,10 +209,24 @@ def main():
         if x["ek"] in SKILL_CONTACT and x["et"] != "field_error":   # an error doesn't help the batter
             res[x["et"]].append(x["rv"] - runner_runs(x))
     W["result"] = {k: st.mean(v) * S for k, v in res.items() if len(v) >= 50}
-    print("\n## Step 7: ball-in-play result values (net of runner points), used for half of the game score")
+    print("\n## Step 7: ball-in-play result values (net of runner points), used for the Luck grade")
     print("| Result | Balls | Points |\n|---|---|---|")
     for k, v in sorted(W["result"].items(), key=lambda kv: -kv[1]):
         print(f"| {k} | {len(res[k]):,} | {v:+.2f} |")
+
+    # 7c. expected result for each kind of contact (3 mph x 4 degree buckets), for the Luck grade
+    HITS = {"single", "double", "triple", "home_run"}
+    cells, grp = collections.defaultdict(list), collections.defaultdict(list)
+    for x in reg:
+        if x["ek"] in SKILL_CONTACT and x["et"] in W["result"]:
+            v = (W["result"][x["et"]], 1.0 if x["et"] in HITS else 0.0)
+            grp[x["ek"]].append(v)
+            k = bin_key(x)
+            if k: cells[k].append(v)
+    mean2 = lambda vs: [round(st.mean(a for a, _ in vs), 4), round(st.mean(b for _, b in vs), 4)]
+    W["xres"] = {k: mean2(v) for k, v in cells.items() if len(v) >= 40}
+    W["xres_grp"] = {k: mean2(v) for k, v in grp.items()}
+    print(f"\nExpected-result buckets: {len(W['xres'])} with 40+ balls (smaller buckets fall back to the contact grade)")
 
     # 8. long AB and first-pitch HR bonuses, sized from the fitted values
     def pre_bonus(x):
