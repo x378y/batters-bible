@@ -1,0 +1,598 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Batters Bible</title>
+<meta name="description" content="Every MLB plate appearance scored: quality, clutch, contact, power and more, graded S to F.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Batters Bible">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: scorebook column like Pitch Score. Grades S-F share one colour ramp everywhere. */
+:root {
+  --bg: #f4f5f8; --surface: #ffffff; --fg: #161b26; --muted: #5d6578; --line: #dde1ea;
+  --accent: #1f4fa3; --accent-soft: #e3ebf8; --post: #8a5a00; --post-soft: #f6ecd6; --bad: #b3261e; --good: #1d6b45;
+  --font-display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --gS-bg: #EEEDFE; --gS: #3C3489; --gA-bg: #E1F5EE; --gA: #085041; --gB-bg: #EAF3DE; --gB: #27500A;
+  --gC-bg: #F1EFE8; --gC: #444441; --gD-bg: #FAEEDA; --gD: #633806; --gE-bg: #FAECE7; --gE: #712B13;
+  --gF-bg: #FCEBEB; --gF: #791F1F;
+  --bS: #7F77DD; --bA: #1D9E75; --bB: #639922; --bC: #888780; --bD: #BA7517; --bE: #D85A30; --bF: #E24B4A;
+  --c1: #2563c9; --c2: #d9772b; --c3: #8a4fd1; --c4: #0f8f80; --c5: #c2407a; --c6: #5f6f0e;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f121a; --surface: #171c27; --fg: #e6e9f0; --muted: #949cb0; --line: #283041;
+    --accent: #7aa5f0; --accent-soft: #1c2a45; --post: #e0b155; --post-soft: #33290f; --bad: #f08a80; --good: #5cc792;
+    --gS-bg: #3C3489; --gS: #CECBF6; --gA-bg: #085041; --gA: #9FE1CB; --gB-bg: #27500A; --gB: #C0DD97;
+    --gC-bg: #444441; --gC: #D3D1C7; --gD-bg: #633806; --gD: #FAC775; --gE-bg: #712B13; --gE: #F5C4B3;
+    --gF-bg: #791F1F; --gF: #F7C1C1;
+    --bS: #AFA9EC; --bA: #5DCAA5; --bB: #97C459; --bC: #B4B2A9; --bD: #EF9F27; --bE: #F0997B; --bF: #F09595;
+    --c1: #6fa0f0; --c2: #f0a060; --c3: #b48af0; --c4: #4fd1c0; --c5: #f080b0; --c6: #b8c860;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f121a; --surface: #171c27; --fg: #e6e9f0; --muted: #949cb0; --line: #283041;
+  --accent: #7aa5f0; --accent-soft: #1c2a45; --post: #e0b155; --post-soft: #33290f; --bad: #f08a80; --good: #5cc792;
+  --gS-bg: #3C3489; --gS: #CECBF6; --gA-bg: #085041; --gA: #9FE1CB; --gB-bg: #27500A; --gB: #C0DD97;
+  --gC-bg: #444441; --gC: #D3D1C7; --gD-bg: #633806; --gD: #FAC775; --gE-bg: #712B13; --gE: #F5C4B3;
+  --gF-bg: #791F1F; --gF: #F7C1C1;
+  --bS: #AFA9EC; --bA: #5DCAA5; --bB: #97C459; --bC: #B4B2A9; --bD: #EF9F27; --bE: #F0997B; --bF: #F09595;
+  --c1: #6fa0f0; --c2: #f0a060; --c3: #b48af0; --c4: #4fd1c0; --c5: #f080b0; --c6: #b8c860;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 var(--font-body);
+  padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.wrap { max-width: 760px; margin: 0 auto; padding: 20px max(16px, env(safe-area-inset-right, 0px)) 48px max(16px, env(safe-area-inset-left, 0px));
+  display: flex; flex-direction: column; gap: 20px; }
+a { color: var(--accent); }
+button, input, select { font: inherit; color: inherit; }
+button:focus-visible, input:focus-visible, a:focus-visible, tr:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.num { font-variant-numeric: tabular-nums; }
+header.top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.brand { font-family: var(--font-display); font-weight: 700; font-size: 30px; line-height: 1; text-decoration: none; color: var(--fg); }
+.brand span { color: var(--accent); }
+.top .spacer { flex: 1; }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 7px 12px; cursor: pointer; font-size: 14px; font-weight: 500; text-decoration: none; color: var(--fg); display: inline-block; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+header .btn[aria-current] { border-color: var(--accent); background: var(--accent-soft); }
+@media (max-width: 480px) { header.top .spacer { flex-basis: 100%; height: 0; } header.top .btn { padding: 6px 9px; font-size: 13px; } }
+.status { font-size: 13px; color: var(--muted); min-height: 1.5em; }
+.status.err { color: var(--bad); }
+h1, h2 { font-family: var(--font-display); font-weight: 700; line-height: 1.1; margin: 0; text-wrap: balance; }
+h1 { font-size: 34px; } h2 { font-size: 22px; }
+.label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+.note { font-size: 12px; color: var(--muted); }
+#view { display: flex; flex-direction: column; gap: 28px; }
+section { display: flex; flex-direction: column; gap: 10px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+.empty { padding: 28px 16px; text-align: center; color: var(--muted); }
+
+/* grade tiles */
+.g { background: var(--g-bg); color: var(--g); }
+.gS { --g-bg: var(--gS-bg); --g: var(--gS); } .gA { --g-bg: var(--gA-bg); --g: var(--gA); } .gB { --g-bg: var(--gB-bg); --g: var(--gB); }
+.gC { --g-bg: var(--gC-bg); --g: var(--gC); } .gD { --g-bg: var(--gD-bg); --g: var(--gD); } .gE { --g-bg: var(--gE-bg); --g: var(--gE); }
+.gF { --g-bg: var(--gF-bg); --g: var(--gF); }
+.tile { border-radius: 8px; padding: 12px 6px; text-align: center; }
+.tile .k { font-size: 12px; } .tile .L { font-family: var(--font-display); font-size: 34px; font-weight: 700; line-height: 1.05; }
+.tile .v { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; } .tile .p { font-size: 11px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: 8px; }
+.hdr { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; }
+.hdr .nm { font-family: var(--font-display); font-size: 30px; font-weight: 700; line-height: 1.05; }
+.hdr .sub { font-size: 13px; color: var(--muted); }
+.headline { display: flex; gap: 10px; align-items: stretch; }
+.totbox { background: var(--bg); border-radius: 8px; padding: 10px 14px; text-align: right; display: flex; flex-direction: column; justify-content: center; }
+.totbox .v { font-family: var(--font-display); font-size: 32px; font-weight: 700; line-height: 1; }
+.ov { min-width: 92px; display: flex; flex-direction: column; justify-content: center; padding: 8px 12px; }
+.ov .L { font-size: 42px; }
+.letter { display: inline-block; min-width: 1.9em; text-align: center; font-family: var(--font-display); font-weight: 700; font-size: 17px; line-height: 1.5; border-radius: 5px; }
+.pill { display: inline-block; font-size: 11px; font-weight: 700; padding: 0 7px; border-radius: 999px; line-height: 1.6; vertical-align: 1px; }
+.legendrow { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); }
+.legendrow .pill { font-weight: 600; }
+
+/* lists */
+.board { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); overflow: hidden; }
+.row { display: grid; grid-template-columns: 2em minmax(0, 1fr) auto auto; gap: 12px; align-items: center; padding: 10px 14px; border-top: 1px solid var(--line); text-decoration: none; color: inherit; }
+.row:first-child { border-top: 0; }
+.row:hover { background: var(--accent-soft); }
+.rank { font-family: var(--font-display); font-size: 20px; color: var(--muted); text-align: center; }
+.who .nm { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.who .sub { color: var(--muted); font-size: 13px; }
+.minigr { display: flex; gap: 3px; }
+.minigr .letter { font-size: 13px; min-width: 1.6em; }
+.big { text-align: right; }
+.big .v { font-family: var(--font-display); font-size: 26px; font-weight: 700; line-height: 1; }
+.big .k { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+@media (max-width: 560px) { .minigr { display: none; } .row { grid-template-columns: 1.6em minmax(0,1fr) auto; } .row .ovg { display: none; } }
+.add { position: relative; }
+.add input { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); }
+.results { list-style: none; margin: 6px 0 0; padding: 0; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); overflow: hidden; }
+.results li { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-top: 1px solid var(--line); }
+.results li:first-child { border-top: 0; }
+.results li .nm { flex: 1; min-width: 0; }
+.results li .sub { color: var(--muted); font-size: 13px; }
+
+/* tables */
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { padding: 7px 8px; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+th { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--line); background: var(--surface); }
+th.sortable { cursor: pointer; } th.sortable:hover { color: var(--accent); } th[aria-sort] { color: var(--accent); }
+td.l, th.l { text-align: left; } td.c, th.c { text-align: center; }
+tbody tr { border-top: 1px solid var(--line); }
+tbody tr.click { cursor: pointer; } tbody tr.click:hover { background: var(--accent-soft); }
+td.sc { font-family: var(--font-display); font-size: 20px; font-weight: 700; }
+td.nm a { color: var(--fg); text-decoration: none; font-weight: 600; } td.nm a:hover { color: var(--accent); }
+td.nm .sub { color: var(--muted); font-size: 12px; margin-left: 6px; font-weight: 400; }
+tr.mine td.nm a::after { content: "•"; color: var(--accent); margin-left: 5px; }
+.tag { display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: .06em; padding: 1px 5px; border-radius: 4px; background: var(--post-soft); color: var(--post); margin-left: 6px; vertical-align: 1px; }
+tr.sub td { background: var(--bg); }
+tr.sub > td { padding: 0; }
+.pas { width: 100%; font-size: 13px; }
+.pas td, .pas th { padding: 6px 8px; }
+.pas tr.click:hover { background: var(--accent-soft); }
+.pos { color: var(--good); } .neg { color: var(--bad); }
+.detail { padding: 12px 14px 16px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; text-align: left; white-space: normal; }
+@media (max-width: 640px) { .detail { grid-template-columns: 1fr; } }
+.detail table { font-size: 13px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+.detail td, .detail th { padding: 5px 8px; }
+.detail tfoot td { font-weight: 700; border-top: 1px solid var(--line); }
+
+/* controls */
+.ctl { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.ctl label { font-size: 13px; color: var(--muted); display: inline-flex; gap: 6px; align-items: center; }
+.ctl input[type=number] { width: 5.5em; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.ctl input[type=search] { padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); min-width: 12em; }
+select.btn { padding: 6px 8px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; background: var(--surface); padding: 6px 12px; cursor: pointer; font-size: 13px; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--bg); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--c); background: var(--surface); border-radius: 999px; padding: 5px 10px 5px 9px; font-size: 14px; }
+.chip i { width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
+.chip button { border: 0; background: none; cursor: pointer; color: var(--muted); padding: 0 2px; font-size: 15px; line-height: 1; }
+.chartbox { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 12px; }
+.chartbox svg { display: block; width: 100%; height: auto; }
+.legend { display: flex; gap: 14px; font-size: 12px; color: var(--muted); margin-top: 6px; flex-wrap: wrap; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+
+/* scoring page */
+.weights { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 2px 22px; font-size: 14px; }
+.weights div { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px dashed var(--line); padding: 4px 0; }
+.prose { font-size: 14px; color: var(--fg); max-width: 70ch; }
+.prose p { margin: 0 0 8px; }
+.formula { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; background: var(--bg); border-radius: 8px; padding: 10px 12px; white-space: pre-wrap; }
+footer { font-size: 12px; color: var(--muted); }
+@media (min-width: 900px) {
+  body { font-size: 16px; }
+  .wrap { max-width: 1180px; padding: 28px 32px 64px; }
+  .brand { font-size: 36px; } h1 { font-size: 42px; } h2 { font-size: 26px; }
+  table { font-size: 15px; } th, td { padding: 9px 10px; }
+  .add { max-width: 560px; }
+}
+@media (min-width: 1500px) { .wrap { max-width: 1400px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="#">Batters<span>Bible</span></a>
+    <select class="btn" id="seasonSel" aria-label="Season"></select>
+    <span class="spacer"></span>
+    <a class="btn" href="#" data-nav="home">Following</a>
+    <a class="btn" href="#leaders" data-nav="leaders">Leaders</a>
+    <a class="btn" href="#compare" data-nav="compare">Compare</a>
+    <a class="btn" href="#scoring" data-nav="scoring">Scoring</a>
+  </header>
+  <div class="status" id="status" role="status"></div>
+  <main id="view"></main>
+  <footer id="foot">Data from the MLB Stats API.</footer>
+</div>
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+function load(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } }
+function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+const cache = {};
+async function getJSON(url) {
+  if (!cache[url]) cache[url] = fetch(url).then(r => { if (!r.ok) throw new Error(r.status + " " + url); return r.json(); });
+  try { return await cache[url]; } catch (e) { delete cache[url]; throw e; }
+}
+function setStatus(msg, err) { const el = $("#status"); el.textContent = msg || ""; el.classList.toggle("err", !!err); }
+
+let META = null, SEASON = null;
+let following = load("bb:following", []);
+const COLORS = ["var(--c1)", "var(--c2)", "var(--c3)", "var(--c4)", "var(--c5)", "var(--c6)"];
+const BASES = ["Bases empty", "Runner on 1st", "Runner on 2nd", "1st & 2nd", "Runner on 3rd", "1st & 3rd", "2nd & 3rd", "Bases loaded"];
+const LOC = { H: "Heart", Z: "In zone", E: "Just off edge", O: "Outside", F: "Way outside", U: "Unknown" };
+const ACT = { B: "Took ball", C: "Called strike", W: "Swing and miss", F: "Foul", X: "In play" };
+const EK = { "barrel+impact": "Barrel, pulled", barrel: "Barrel", "hard ld+impact": "Hard line drive, pulled", "hard ld": "Hard line drive",
+  "hard fb+impact": "Hard fly ball, pulled", "hard fb": "Hard fly ball", "hard gb": "Hard grounder", "med ld": "Medium line drive",
+  med: "Medium contact", "weak ld": "Weak line drive", "weak gb": "Weak grounder", "weak fb": "Weak fly ball", popup: "Pop-up",
+  bunt_hit: "Bunt hit", bunt_out: "Bunt out", bb: "Walk", bb30: "Walk", ibb: "Intentional walk", hbp: "Hit by pitch", ci: "Catcher's interference",
+  k_swing: "Strikeout swinging", k_look_in: "Strikeout looking", k_look_out: "Strikeout looking (off the plate)" };
+const PITCH_LABEL = { take_ball_edge: "Take a ball just off the edge", take_ball_out: "Take a ball outside", take_ball_far: "Take a ball way outside",
+  ball_in_zone: "Ball called in the zone (umpire)", called_heart: "Called strike, heart", called_zone: "Called strike, zone",
+  called_off_plate: "Strike called off the plate (umpire)", whiff_heart: "Whiff, heart", whiff_zone: "Whiff, zone", whiff_edge: "Whiff just off the edge",
+  whiff_out: "Whiff outside", whiff_far: "Whiff way outside", foul_heart: "Foul, heart (<2 strikes)", foul_zone: "Foul, zone (<2 strikes)",
+  foul_edge: "Foul just off the edge (<2 strikes)", foul_out: "Foul outside (<2 strikes)", foul2_heart: "2-strike foul, heart",
+  foul2_zone: "2-strike foul, zone", foul2_edge: "2-strike foul, just off the edge", foul2_out: "2-strike foul, outside" };
+
+function ord(n) { const v = n % 100; return n + (v >= 11 && v <= 13 ? "th" : ({ 1: "st", 2: "nd", 3: "rd" }[n % 10] || "th")); }
+function sgn(v, d = 2) { if (v == null || isNaN(v)) return "–"; const s = Number(v).toFixed(d); return v > 0 ? "+" + s : (Number(s) === 0 ? s.replace("-", "") : s); }
+function fmtCat(key, v) {
+  if (v == null) return "–";
+  const c = META.cats.find(c => c.key === key);
+  if (!c) return sgn(v);
+  if (c.fmt.includes("%")) return Number(v).toFixed(c.fmt.includes(".1f") ? 1 : 0) + "%";
+  if (key === "steal") return sgn(v, 1) + "/600";
+  return sgn(v, 2);
+}
+function gameGrade(s) { for (const [g, cut] of META.game_cuts) if (s >= cut) return g; return "F"; }
+function fmtDate(d) { const [y, m, day] = d.split("-").map(Number); return new Date(y, m - 1, day).toLocaleDateString(undefined, { month: "short", day: "numeric" }); }
+function pitchCat(b, s, loc, o) {
+  if (loc === "U") return null;
+  if (o === "B") return { E: "take_ball_edge", O: "take_ball_out", F: "take_ball_far" }[loc] || "ball_in_zone";
+  if (o === "C") return { H: "called_heart", Z: "called_zone" }[loc] || "called_off_plate";
+  if (o === "W") return { H: "whiff_heart", Z: "whiff_zone", E: "whiff_edge", O: "whiff_out", F: "whiff_far" }[loc];
+  if (o === "F") return (s === 2 ? "foul2_" : "foul_") + { H: "heart", Z: "zone", E: "edge", O: "out", F: "out" }[loc];
+  return null;
+}
+function decodePC(pc) { const out = []; for (let i = 0; i < pc.length; i += 4) out.push([+pc[i], +pc[i + 1], pc[i + 2], pc[i + 3]]); return out; }
+const isFollowed = id => following.includes(id);
+function toggleFollow(id) { following = isFollowed(id) ? following.filter(x => x !== id) : [...following, id]; save("bb:following", following); }
+
+async function season(yr) { return getJSON(`data/season-${yr}.json`); }
+const PA_DEFAULTS = { t: 0, o: 0, b: 0, mg: 0, et: "", ek: "", p: 0, e: 0, lg: 0, fp: 0, ru: 0, wo: 0, bs: 0, m: 1, li: null, pc: "", ev: null, la: null,
+  rbi: 0, r2: 0, adv: 0, sr: 0, s3: 0, po: 0, q: 0 };
+async function playerLog(yr, id) {
+  const log = await getJSON(`data/p/${yr}/${id}.json`);
+  if (!log._filled) { for (const g of log.games) g.pas = g.pas.map(pa => ({ ...PA_DEFAULTS, ...pa })); log._filled = true; }
+  return log;
+}
+function findPlayer(S, id) { return S.players.find(p => p.id === id); }
+function teamOf(p) { return p ? p.team : ""; }
+
+function tileHTML(key, label, line, big) {
+  const g = line[key + "_g"], v = line[key], p = line[key + "_p"];
+  if (g == null) return `<div class="tile gC"><div class="k">${esc(label)}</div><div class="L">–</div><div class="v">no data</div><div class="p">&nbsp;</div></div>`;
+  return `<div class="tile g g${g}${big ? " ov" : ""}" title="${esc(label)}: ${esc(fmtCat(key, v))}, ${ord(p)} percentile"><div class="k">${esc(label)}</div><div class="L">${g}</div><div class="v">${esc(fmtCat(key, v))}${key === "clutch" ? "/PA" : ""}</div><div class="p">${ord(p)} pct</div></div>`;
+}
+function gradeCard(p, line, S, mode) {
+  const others = META.cats.filter(c => c.key !== "clutch" && line[c.key + "_g"] != null);
+  const sub = [p.team, `${line.pa} PA`, p.ops != null && mode === "reg" ? `${p.ops.toFixed(3)} OPS` : null,
+    mode === "reg" ? `${line.sb} SB, ${line.cs} CS` : "Postseason"].filter(Boolean).join(" · ");
+  return `<div class="card">
+    <div class="hdr"><div><div class="nm">${esc(p.name)}</div><div class="sub">${esc(sub)} · ${SEASON}</div></div>
+      <div class="headline"><div class="totbox"><div class="label">Season total</div><div class="v num">${sgn(line.total, 0)}</div>
+        <div class="note">${mode === "reg" ? `League avg ${sgn(S.avg_total, 0)}` : "Postseason only"}</div></div>
+        ${tileHTML("clutch", "Overall", line, true)}</div></div>
+    <div class="tiles">${others.map(c => tileHTML(c.key, c.label, line)).join("")}</div></div>`;
+}
+function legendHTML(note) {
+  return `<div class="legendrow"><span>${esc(note)}</span>${META.tiers.map(([c, g], i) => {
+    const hi = i === 0 ? "" : `–${META.tiers[i - 1][0] - 1}`; return `<span class="pill g g${g}">${g} ${c}${i === 0 ? "+" : hi}</span>`; }).join("")}</div>`;
+}
+function letter(g, title) { return g ? `<span class="letter g g${g}" title="${esc(title || "")}">${g}</span>` : `<span class="letter" style="color:var(--muted)">–</span>`; }
+
+/* ---------- search ---------- */
+function searchBox(S, onPick, placeholder) {
+  const id = "q" + Math.random().toString(36).slice(2, 7);
+  setTimeout(() => {
+    const inp = document.getElementById(id), res = document.getElementById(id + "r");
+    if (!inp) return;
+    inp.addEventListener("input", () => {
+      const q = inp.value.trim().toLowerCase();
+      if (q.length < 2) { res.innerHTML = ""; res.hidden = true; return; }
+      const hits = S.players.filter(p => p.name.toLowerCase().includes(q)).slice(0, 8);
+      res.hidden = !hits.length;
+      res.innerHTML = hits.map(p => `<li><div class="nm">${esc(p.name)} <span class="sub">${esc(p.team)} · ${p.reg ? p.reg.pa + " PA" : "postseason only"}</span></div>
+        <button class="btn" data-id="${p.id}" type="button">${onPick.label(p.id)}</button></li>`).join("");
+      res.querySelectorAll("button").forEach(b => b.onclick = () => { onPick.fn(+b.dataset.id); inp.value = ""; res.innerHTML = ""; res.hidden = true; });
+    });
+  });
+  return `<div class="add"><input id="${id}" type="search" placeholder="${esc(placeholder)}" autocomplete="off" aria-label="${esc(placeholder)}"><ul class="results" id="${id}r" hidden></ul></div>`;
+}
+
+/* ---------- home: following ---------- */
+async function viewHome() {
+  const S = await season(SEASON);
+  const rows = following.map(id => findPlayer(S, id)).filter(Boolean)
+    .sort((a, b) => ((b.reg || {}).total ?? -1e9) - ((a.reg || {}).total ?? -1e9));
+  const quick = ["quality", "contact", "power", "discipline", "runs", "gap"];
+  const list = (ps, numbered) => `<div class="board">${ps.map((p, i) => {
+    const l = p.reg || p.post;
+    return `<a class="row" href="#player/${p.id}"><span class="rank">${numbered ? i + 1 : ""}</span>
+      <div class="who"><div class="nm">${esc(p.name)}</div><div class="sub">${esc(p.team)} · ${l.pa} PA${p.reg ? "" : " (postseason)"}</div></div>
+      <div class="minigr">${quick.map(k => letter(l[k + "_g"], META.cats.find(c => c.key === k).label)).join("")}</div>
+      <div style="display:flex;gap:12px;align-items:center"><span class="ovg">${letter(l.clutch_g, "Overall")}</span><div class="big"><div class="v num">${sgn(l.total, 0)}</div><div class="k">Total</div></div></div></a>`;
+  }).join("")}</div>`;
+  let html = `<section><h1>Batters you follow</h1>
+    ${searchBox(S, { label: id => isFollowed(id) ? "Following" : "Follow", fn: id => { if (!isFollowed(id)) toggleFollow(id); route(); } }, "Add a batter: type a name")}</section>`;
+  if (rows.length) {
+    html += `<section>${list(rows, true)}
+      <div class="note">Mini grades: Quality, Contact, Power, Discipline, Run production, Clutch. Then Overall and season total.</div></section>`;
+  } else {
+    const top = S.players.filter(p => p.reg && p.reg.pa >= S.min_pa).slice(0, 10);
+    html += `<section><div class="empty">You're not following anyone yet. Search above, or start from the leaders.</div>
+      <h2>${SEASON} leaders</h2>${list(top, true)}<a href="#leaders">Full leaderboard →</a></section>`;
+  }
+  $("#view").innerHTML = html;
+}
+
+/* ---------- leaders ---------- */
+let LB = load("bb:lb", { mode: "reg", min: null, team: "", sort: "total", dir: -1, q: "" });
+async function viewLeaders() {
+  const S = await season(SEASON);
+  const mode = LB.mode;
+  const min = LB.min ?? (mode === "reg" ? S.min_pa : 10);
+  const teams = [...new Set(S.players.map(p => p.team).filter(Boolean))].sort();
+  const cats = META.cats.filter(c => !(mode === "post" && c.key === "steal"));
+  let rows = S.players.filter(p => p[mode] && p[mode].pa >= min && (!LB.team || p.team === LB.team)
+    && (!LB.q || p.name.toLowerCase().includes(LB.q.toLowerCase())));
+  const key = LB.sort, val = p => key === "pa" ? p[mode].pa : key === "total" ? p[mode].total : p[mode][key];
+  rows.sort((a, b) => ((val(a) ?? -1e9) - (val(b) ?? -1e9)) * LB.dir);
+  const th = (k, label, cls = "") => `<th class="sortable ${cls}" data-k="${k}" ${LB.sort === k ? `aria-sort="${LB.dir < 0 ? "descending" : "ascending"}"` : ""}>${label}${LB.sort === k ? (LB.dir < 0 ? " ▾" : " ▴") : ""}</th>`;
+  $("#view").innerHTML = `<section><h1>${SEASON} leaderboard</h1>
+    <div class="ctl">
+      <div class="seg" role="group" aria-label="Season type"><button type="button" data-mode="reg" aria-pressed="${mode === "reg"}">Regular season</button><button type="button" data-mode="post" aria-pressed="${mode === "post"}">Postseason</button></div>
+      <label>Min PA <input type="number" id="lbmin" min="0" step="10" value="${min}"></label>
+      <label>Team <select class="btn" id="lbteam"><option value="">All</option>${teams.map(t => `<option ${t === LB.team ? "selected" : ""}>${esc(t)}</option>`).join("")}</select></label>
+      <input type="search" id="lbq" placeholder="Filter by name" value="${esc(LB.q)}" aria-label="Filter by name">
+    </div>
+    ${legendHTML(`Grades are percentiles among ${S.qualified} hitters with ${S.min_pa}+ PA.`)}
+    <div class="tablewrap"><table class="lt"><thead><tr><th class="l">#</th><th class="l">Batter</th>${th("pa", "PA")}${th("total", "Total")}
+      ${cats.map(c => th(c.key, c.label === "Run production" ? "Runs" : c.label === "Base stealing" ? "Steal" : c.label === "Consistency" ? "Cons." : c.label, "c")).join("")}</tr></thead>
+    <tbody>${rows.map((p, i) => { const l = p[mode]; return `<tr class="${isFollowed(p.id) ? "mine" : ""}"><td class="l num">${i + 1}</td>
+      <td class="l nm"><a href="#player/${p.id}">${esc(p.name)}</a><span class="sub">${esc(p.team)}</span></td>
+      <td class="num">${l.pa}</td><td class="sc num">${sgn(l.total, 0)}</td>
+      ${cats.map(c => `<td class="c">${letter(l[c.key + "_g"], `${c.label}: ${fmtCat(c.key, l[c.key])} (${ord(l[c.key + "_p"])} pct)`)}</td>`).join("")}</tr>`; }).join("")
+      || `<tr><td colspan="${cats.length + 4}" class="empty">No batters match. Try lowering the PA minimum.</td></tr>`}</tbody></table></div>
+    <div class="note">Click a column to sort by its value. Hover a grade to see the number behind it.${mode === "post" ? " Postseason grades use the regular-season scale." : ""}</div></section>`;
+  const upd = (patch) => { LB = { ...LB, ...patch }; save("bb:lb", LB); viewLeaders(); };
+  document.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => upd({ mode: b.dataset.mode, min: null }));
+  $("#lbmin").onchange = e => upd({ min: Math.max(0, +e.target.value || 0) });
+  $("#lbteam").onchange = e => upd({ team: e.target.value });
+  let tm; $("#lbq").oninput = e => { clearTimeout(tm); tm = setTimeout(() => { upd({ q: e.target.value }); const q = $("#lbq"); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }, 250); };
+  document.querySelectorAll("th.sortable").forEach(h => h.onclick = () => upd({ sort: h.dataset.k, dir: LB.sort === h.dataset.k ? -LB.dir : -1 }));
+}
+
+/* ---------- player ---------- */
+function barChart(games) {
+  const W = 760, H = 190, padL = 34, padB = 22, padT = 10;
+  const vals = games.map(g => g.s);
+  const hi = Math.max(10, ...vals), lo = Math.min(-5, ...vals);
+  const y = v => padT + (hi - v) / (hi - lo) * (H - padT - padB);
+  const bw = (W - padL - 6) / Math.max(1, games.length);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Game scores, one bar per game">`;
+  for (const t of [lo, 0, hi / 2, hi].map(v => Math.round(v))) {
+    s += `<line x1="${padL}" x2="${W}" y1="${y(t)}" y2="${y(t)}" stroke="var(--line)" ${t === 0 ? "" : 'stroke-dasharray="3 4"'}/><text x="${padL - 6}" y="${y(t) + 4}" font-size="11" text-anchor="end" fill="var(--muted)">${t}</text>`;
+  }
+  games.forEach((g, i) => {
+    const x = padL + i * bw + bw * .12, top = y(Math.max(0, g.s)), bot = y(Math.min(0, g.s)), gr = gameGrade(g.s);
+    s += `<rect x="${x.toFixed(1)}" y="${top.toFixed(1)}" width="${Math.max(1, bw * .76).toFixed(1)}" height="${Math.max(1, bot - top).toFixed(1)}" rx="1.5" fill="var(--b${gr})" ${g.post ? 'stroke="var(--post)" stroke-width="1.5"' : ""}><title>${esc(fmtDate(g.d))} ${g.home ? "vs" : "at"} ${esc(g.opp)}: ${sgn(g.s)} (${gr})${g.post ? " · postseason" : ""}</title></rect>`;
+  });
+  const months = []; let last = "";
+  games.forEach((g, i) => { const m = g.d.slice(5, 7); if (m !== last) { months.push([i, new Date(2000, +m - 1, 1).toLocaleDateString(undefined, { month: "short" })]); last = m; } });
+  for (const [i, m] of months) s += `<text x="${padL + i * bw}" y="${H - 6}" font-size="11" fill="var(--muted)">${m}</text>`;
+  return s + "</svg>";
+}
+function situation(pa) {
+  const sc = pa.mg === 0 ? "tied" : pa.mg > 0 ? `up ${pa.mg}` : `down ${-pa.mg}`;
+  return `${pa.t ? "▲" : "▼"}${pa.i} · ${pa.o} out · ${BASES[pa.b]} · ${sc}`;
+}
+function paResult(pa) { return esc(pa.et.replace(/_/g, " ")) + (EK[pa.ek] && !["bb", "bb30", "ibb", "hbp", "ci"].includes(pa.ek) && !pa.ek.startsWith("k_") ? ` <span class="note">${esc(EK[pa.ek])}</span>` : ""); }
+function cls(v) { return v > 0.005 ? "pos" : v < -0.005 ? "neg" : ""; }
+function paDetail(pa) {
+  const w = META.weights, pcs = decodePC(pa.pc);
+  const prow = pcs.map(([b, s, l, o], i) => {
+    const last = i === pcs.length - 1, cat = last ? null : pitchCat(b, s, l, o), v = cat ? (w.pitch[cat] ?? 0) : null;
+    return `<tr><td class="l">${i + 1}</td><td class="l">${b}-${s}</td><td class="l">${LOC[l]}</td><td class="l">${ACT[o]}</td><td class="${last ? "" : cls(v)}" title="${esc(cat ? PITCH_LABEL[cat] : "")}">${last ? "ending →" : sgn(v)}</td></tr>`;
+  }).join("");
+  const r = w.runner, parts = [["Pitches before the last", pa.p], [EK[pa.ek] || pa.ek, pa.e]];
+  if (pa.lg) parts.push([`Long at-bat (${pa.n} pitches)`, pa.lg]);
+  if (pa.fp) parts.push(["First-pitch home run", pa.fp]);
+  const rbi1 = pa.rbi - pa.r2;
+  if (rbi1) parts.push([`RBI, 0–1 outs (${rbi1} × ${sgn(r.rbi_lt2)})`, rbi1 * r.rbi_lt2]);
+  if (pa.r2) parts.push([`RBI, 2 outs (${pa.r2} × ${sgn(r.rbi_2)})`, pa.r2 * r.rbi_2]);
+  if (pa.adv) parts.push([`Bases runners moved up (${pa.adv} × ${sgn(r.adv_bases)})`, pa.adv * r.adv_bases]);
+  if (pa.sr) parts.push([`Runners stranded (${pa.sr} × ${sgn(r.str_reg)})`, pa.sr * r.str_reg]);
+  if (pa.s3) parts.push([`Stranded on 3rd, <2 outs (${pa.s3} × ${sgn(r.str3)})`, pa.s3 * r.str3]);
+  if (pa.po) parts.push([`Runner put out (${pa.po} × ${sgn(r.putout)})`, pa.po * r.putout]);
+  if (pa.wo) parts.push(["Walk-off", w.walkoff]);
+  const hit = pa.ev != null ? `<div class="note" style="margin-top:6px">Ball in play: ${pa.ev} mph, ${pa.la}°</div>` : "";
+  return `<div class="detail"><div><div class="label" style="margin-bottom:6px">Pitch by pitch</div>
+      <table><thead><tr><th class="l">#</th><th class="l">Count</th><th class="l">Location</th><th class="l">What he did</th><th>Pts</th></tr></thead><tbody>${prow}</tbody></table>${hit}</div>
+    <div><div class="label" style="margin-bottom:6px">How the score adds up</div>
+      <table><tbody>${parts.map(([k, v]) => `<tr><td class="l">${esc(k)}</td><td class="${cls(v)}">${sgn(v)}</td></tr>`).join("")}
+        <tr><td class="l"><b>Base</b></td><td><b>${sgn(pa.bs)}</b></td></tr>
+        <tr><td class="l">Clutch multiplier${pa.li != null ? ` (leverage ${pa.li})` : ""}</td><td>×${pa.m.toFixed(2)}</td></tr></tbody>
+        <tfoot><tr><td class="l">Score</td><td class="${cls(pa.s)}">${sgn(pa.s)}</td></tr></tfoot></table></div></div>`;
+}
+function gameRows(g, gi) {
+  const pas = g.pas.map((pa, j) => `<tr class="click" data-pa="${gi}-${j}"><td class="l">${esc(situation(pa))}</td><td class="l">${paResult(pa)}</td><td>${pa.n}</td>
+      <td class="${cls(pa.p + pa.e + pa.lg + pa.fp)}">${sgn(pa.p + pa.e + pa.lg + pa.fp)}</td><td class="${cls(pa.ru)}">${sgn(pa.ru + (pa.wo ? META.weights.walkoff : 0))}</td>
+      <td>×${pa.m.toFixed(2)}</td><td class="${cls(pa.s)}"><b>${sgn(pa.s)}</b></td></tr><tr class="sub" id="pd-${gi}-${j}" hidden><td colspan="7"></td></tr>`).join("");
+  return `<table class="pas"><thead><tr><th class="l">Situation</th><th class="l">Result</th><th>Pitches</th><th>Quality</th><th>Runners</th><th>Clutch</th><th>Score</th></tr></thead><tbody>${pas}</tbody></table>`;
+}
+async function seasonsTable(id) {
+  const rows = [];
+  for (const yr of META.seasons) {
+    try { const S = await season(yr); const p = findPlayer(S, id); if (p && p.reg) rows.push([yr, p.reg, S]); } catch {}
+  }
+  if (rows.length < 1) return "";
+  const cats = META.cats;
+  return `<section><h2>Season by season</h2><div class="tablewrap"><table><thead><tr><th class="l">Season</th><th>PA</th><th>Total</th>
+    ${cats.map(c => `<th class="c">${c.label === "Run production" ? "Runs" : c.label === "Base stealing" ? "Steal" : c.label === "Consistency" ? "Cons." : c.label}</th>`).join("")}</tr></thead>
+    <tbody>${rows.map(([yr, l]) => `<tr><td class="l"><a href="#player/${id}" data-season="${yr}">${yr}</a></td><td class="num">${l.pa}</td><td class="sc num">${sgn(l.total, 0)}</td>
+      ${cats.map(c => `<td class="c">${letter(l[c.key + "_g"], `${fmtCat(c.key, l[c.key])} (${ord(l[c.key + "_p"])} pct)`)}</td>`).join("")}</tr>`).join("")}</tbody></table></div></section>`;
+}
+let PMODE = "reg";
+async function viewPlayer(id) {
+  const S = await season(SEASON);
+  const p = findPlayer(S, id);
+  let log;
+  try { log = await playerLog(SEASON, id); } catch { log = null; }
+  if (!p && !log) { $("#view").innerHTML = `<div class="empty">No ${SEASON} data for this batter. Try another season.</div>`; return; }
+  const P = p || { id, name: log.name, team: log.team };
+  const mode = P[PMODE] ? PMODE : (P.reg ? "reg" : "post");
+  const line = P[mode];
+  const games = (log ? log.games : []).filter(g => mode === "post" ? g.post : true);
+  let html = `<div class="ctl"><a href="#leaders">← Leaderboard</a><span style="flex:1"></span>
+    ${P.post && P.reg ? `<div class="seg" role="group" aria-label="Season type"><button type="button" data-pm="reg" aria-pressed="${mode === "reg"}">Regular season</button><button type="button" data-pm="post" aria-pressed="${mode === "post"}">Postseason</button></div>` : ""}
+    <button class="btn ${isFollowed(id) ? "" : "primary"}" id="fol" type="button">${isFollowed(id) ? "Following ✓" : "Follow"}</button></div>`;
+  html += line ? gradeCard(P, line, S, mode) + legendHTML(`Percentile among ${S.qualified} hitters with ${S.min_pa}+ PA.`)
+    : `<div class="card empty">Fewer than ${META.min_show} PA this season, so no grades. Game log below.</div>`;
+  if (games.length) {
+    html += `<section><h2>Game by game</h2><div class="chartbox">${barChart(games)}
+      <div class="legend">${META.game_cuts.map(([g, c]) => `<span><i style="background:var(--b${g})"></i>${g} ${sgn(c, 1)}+</span>`).join("")}<span><i style="background:transparent;border:1.5px solid var(--post)"></i>Postseason</span></div></div>
+      <div class="note">Game score = sum of that game's plate appearances. Game grades are percentiles of every batter's games.</div></section>`;
+  }
+  html += `<div id="seasons"></div>`;
+  html += `<section><h2>Game log</h2><div class="note">Click a game to see each plate appearance. Click a plate appearance to see it pitch by pitch.</div>
+    <div class="tablewrap"><table><thead><tr><th class="l">Date</th><th class="l">Opp</th><th class="l">Line</th><th>PA</th><th>Quality</th><th>Score</th></tr></thead><tbody>
+    ${games.slice().reverse().map(g => { const gi = games.indexOf(g); const gr = gameGrade(g.s); return `<tr class="click" data-g="${gi}"><td class="l">${esc(fmtDate(g.d))}${g.post ? '<span class="tag">POST</span>' : ""}</td>
+      <td class="l">${g.home ? "vs" : "at"} ${esc(g.opp)}</td><td class="l">${esc(g.ln)}</td><td class="num">${g.pas.length}</td><td class="num ${cls(g.q)}">${sgn(g.q)}</td>
+      <td class="sc num">${sgn(g.s, 1)} <span class="pill g g${gr}">${gr}</span></td></tr><tr class="sub" id="gd-${gi}" hidden><td colspan="6"></td></tr>`; }).join("")
+      || `<tr><td colspan="6" class="empty">No games.</td></tr>`}</tbody></table></div></section>`;
+  $("#view").innerHTML = html;
+  $("#fol").onclick = () => { toggleFollow(id); viewPlayer(id); };
+  document.querySelectorAll("[data-pm]").forEach(b => b.onclick = () => { PMODE = b.dataset.pm; viewPlayer(id); });
+  document.querySelectorAll("tr[data-g]").forEach(tr => tr.onclick = () => {
+    const gi = +tr.dataset.g, sub = document.getElementById("gd-" + gi);
+    if (!sub.hidden) { sub.hidden = true; return; }
+    if (!sub.dataset.done) {
+      sub.firstElementChild.innerHTML = gameRows(games[gi], gi); sub.dataset.done = 1;
+      sub.querySelectorAll("tr[data-pa]").forEach(r => r.onclick = ev => {
+        ev.stopPropagation();
+        const [a, b] = r.dataset.pa.split("-").map(Number), d = document.getElementById(`pd-${a}-${b}`);
+        if (!d.hidden) { d.hidden = true; return; }
+        d.firstElementChild.innerHTML = paDetail(games[a].pas[b]); d.hidden = false;
+      });
+    }
+    sub.hidden = false;
+  });
+  seasonsTable(id).then(h => { const el = $("#seasons"); if (el) { el.outerHTML = h || ""; document.querySelectorAll("[data-season]").forEach(a => a.onclick = e => { setSeason(+a.dataset.season); }); } });
+}
+
+/* ---------- compare ---------- */
+let CMP = load("bb:cmp", []);
+function lineChart(series) {
+  const W = 760, H = 260, padL = 44, padB = 24, padT = 12;
+  const all = series.flatMap(s => s.pts);
+  if (!all.length) return "";
+  const xs = all.map(p => p.t), ys = all.map(p => p.v);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(0, ...ys), y1 = Math.max(10, ...ys);
+  const X = t => padL + (t - x0) / Math.max(1, x1 - x0) * (W - padL - 10), Y = v => padT + (y1 - v) / (y1 - y0) * (H - padT - padB);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Running season total by date">`;
+  const step = Math.pow(10, Math.floor(Math.log10(Math.max(1, y1 - y0)))) * (((y1 - y0) / Math.pow(10, Math.floor(Math.log10(Math.max(1, y1 - y0))))) > 5 ? 2 : 1);
+  for (let v = Math.ceil(y0 / step) * step; v <= y1; v += step) s += `<line x1="${padL}" x2="${W}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)" ${v === 0 ? "" : 'stroke-dasharray="3 4"'}/><text x="${padL - 6}" y="${Y(v) + 4}" font-size="11" text-anchor="end" fill="var(--muted)">${v}</text>`;
+  const d0 = new Date(x0);
+  for (let m = 0; m < 9; m++) { const d = new Date(d0.getFullYear(), d0.getMonth() + m, 1).getTime(); if (d >= x0 && d <= x1) s += `<text x="${X(d)}" y="${H - 6}" font-size="11" fill="var(--muted)">${new Date(d).toLocaleDateString(undefined, { month: "short" })}</text>`; }
+  for (const se of series) {
+    s += `<polyline fill="none" stroke="${se.color}" stroke-width="2" points="${se.pts.map(p => `${X(p.t).toFixed(1)},${Y(p.v).toFixed(1)}`).join(" ")}"/>`;
+    const lp = se.pts[se.pts.length - 1];
+    if (lp) s += `<circle cx="${X(lp.t)}" cy="${Y(lp.v)}" r="3.5" fill="${se.color}"><title>${esc(se.name)}: ${sgn(lp.v, 0)}</title></circle>`;
+  }
+  return s + "</svg>";
+}
+async function viewCompare() {
+  const S = await season(SEASON);
+  if (!CMP.length && following.length) CMP = following.slice(0, 4);
+  const ps = CMP.map(id => findPlayer(S, id)).filter(p => p && p.reg).slice(0, 6);
+  const add = { label: id => CMP.includes(id) ? "Added" : "Add", fn: id => { if (!CMP.includes(id) && CMP.length < 6) { CMP = [...CMP, id]; save("bb:cmp", CMP); } viewCompare(); } };
+  let html = `<section><h1>Compare batters</h1>${searchBox(S, add, "Add a batter to compare (up to 6)")}
+    <div class="chips">${ps.map((p, i) => `<span class="chip" style="--c:${COLORS[i]}"><i></i>${esc(p.name)}<button type="button" data-rm="${p.id}" aria-label="Remove ${esc(p.name)}">×</button></span>`).join("")}</div></section>`;
+  if (!ps.length) { $("#view").innerHTML = html + `<div class="empty">Add batters above to compare their grades and seasons.</div>`; wireCompare(); return; }
+  html += `<section><div class="tablewrap"><table><thead><tr><th class="l">Category</th>${ps.map((p, i) => `<th class="c" style="color:${COLORS[i]}">${esc(p.name.split(" ").slice(-1)[0])}</th>`).join("")}</tr></thead><tbody>
+    <tr><td class="l">Season total</td>${ps.map(p => `<td class="c sc">${sgn(p.reg.total, 0)}</td>`).join("")}</tr>
+    <tr><td class="l">PA</td>${ps.map(p => `<td class="c">${p.reg.pa}</td>`).join("")}</tr>
+    ${META.cats.map(c => `<tr><td class="l">${esc(c.label)}</td>${ps.map(p => `<td class="c">${letter(p.reg[c.key + "_g"])} <span class="note">${esc(fmtCat(c.key, p.reg[c.key]))}</span></td>`).join("")}</tr>`).join("")}
+    </tbody></table></div></section><section><h2>Running season total</h2><div class="chartbox" id="cmpchart"><div class="note">Loading game logs…</div></div></section>`;
+  $("#view").innerHTML = html;
+  wireCompare();
+  const logs = await Promise.all(ps.map(p => playerLog(SEASON, p.id).catch(() => null)));
+  const series = ps.map((p, i) => { let run = 0; return { name: p.name, color: COLORS[i], pts: (logs[i] ? logs[i].games.filter(g => !g.post) : []).map(g => { run += g.s; const [y, m, d] = g.d.split("-").map(Number); return { t: new Date(y, m - 1, d).getTime(), v: run }; }) }; });
+  const el = $("#cmpchart");
+  if (el) el.innerHTML = lineChart(series) + `<div class="legend">${series.map(s => `<span><i style="background:${s.color}"></i>${esc(s.name)}</span>`).join("")}</div>`;
+}
+function wireCompare() { document.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => { CMP = CMP.filter(x => x !== +b.dataset.rm); save("bb:cmp", CMP); viewCompare(); }); }
+
+/* ---------- scoring ---------- */
+function viewScoring() {
+  const w = META.weights, S = w.scale;
+  const wl = obj => `<div class="weights">${obj.map(([k, v]) => `<div><span>${esc(k)}</span><span class="num ${cls(v)}">${typeof v === "number" ? sgn(v) : esc(v)}</span></div>`).join("")}</div>`;
+  const contact = ["barrel+impact", "barrel", "hard ld+impact", "hard ld", "hard fb+impact", "hard fb", "hard gb", "med ld", "med", "weak ld", "weak gb", "weak fb", "popup", "bunt_hit", "bunt_out"];
+  const other = ["bb", "hbp", "ci", "ibb", "k_swing", "k_look_in"];
+  const pitchOrder = Object.keys(w.pitch).sort((a, b) => w.pitch[b] - w.pitch[a]);
+  const steal = [["Steal 2nd", w.steal.sb_2b], ["Steal 3rd", w.steal.sb_3b], ["Steal home", w.steal.sb_home], ["Caught stealing 2nd", w.steal.cs_2b], ["Caught stealing 3rd", w.steal.cs_3b], ["Caught stealing home", w.steal.cs_home], ["Picked off 1st", w.steal.po_1b], ["Picked off 2nd", w.steal.po_2b], ["Picked off 3rd", w.steal.po_3b]];
+  const cdef = { clutch: "Clutch score per PA (everything, times the clutch multiplier)", quality: "Pitch points + ending + long-AB and first-pitch HR bonuses, per PA",
+    contact: "Share of swings that make contact (bat-to-ball skill)", power: "Average contact grade per ball in play (barrels, hard-hit)",
+    discipline: "Pitch decisions plus walks and strikeouts, per PA", grind: "Long-at-bat bonus per PA", runs: "Runner points per PA (RBIs, moving runners, stranding)",
+    steal: "Steal points per 600 PA (separate from the season total)", gap: "Leverage-weighted average minus plain average: better or worse in big spots",
+    qab: "Share of PAs that were quality at-bats (Quality +0.5 or more, or a productive out)", cons: "Share of games (2+ PA) where at least half his PAs were quality at-bats" };
+  $("#view").innerHTML = `<section><h1>How a plate appearance is scored</h1>
+    <div class="prose"><p>Every plate appearance gets points for the pitches he saw, how it ended, and what happened to the runners. The total is multiplied by how much the moment mattered. Values were fitted on ${w.pas.toLocaleString()} regular-season plate appearances (${w.seasons.join("–")}). The scale is 1 run = ${S.toFixed(2)} points, so a walk is +1.5.</p></div>
+    <div class="formula">Quality      = pitch points + ending + long-AB bonus + first-pitch HR bonus
+Base         = Quality + runner points + walk-off
+Score        = Base × clutch multiplier
+Season total = sum of every PA's score</div></section>
+    <section><h2>1. Every pitch before the last one</h2><div class="prose"><p>Each pitch is worth how much better or worse the count got than what usually happens on a pitch in that same spot and count. Umpire mistakes count as 0.</p></div>
+      ${wl(pitchOrder.map(k => [PITCH_LABEL[k] || k, w.pitch[k]]))}</section>
+    <section><h2>2. How it ends</h2><div class="prose"><p>A ball in play is graded on exit velocity and launch angle, not on whether it fell for a hit. That rewards the repeatable skill instead of luck.</p></div>
+      <div class="label">Contact</div>${wl(contact.map(k => [EK[k], w.ending[k]]))}
+      <div class="label" style="margin-top:8px">Other endings</div>${wl(other.map(k => [EK[k], w.ending[k]]).concat([["Strikeout looking, off the plate", w.ending.k_look_in / 2], ["Strikeout swinging adds that pitch's whiff value", "+ whiff"]]))}</section>
+    <section><h2>3. Bonuses</h2>${wl([["7-pitch at-bat", w.long.at7], ["Each pitch after 7", w.long.per_extra], ["First-pitch home run", w.fphr], ["Walk-off", w.walkoff]])}</section>
+    <section><h2>4. Runners</h2><div class="prose"><p>Only movement the batter caused counts: no steals, wild pitches, pickoffs or errors. The automatic runner in extra innings isn't counted as stranded.</p></div>
+      ${wl([["RBI, 0–1 outs", w.runner.rbi_lt2], ["RBI, 2 outs", w.runner.rbi_2], ["Each base a runner moves up", w.runner.adv_bases], ["Runner stranded (batter out)", w.runner.str_reg], ["Stranded on 3rd, fewer than 2 outs", w.runner.str3], ["Runner put out on the play", w.runner.putout]])}</section>
+    <section><h2>5. Clutch multiplier</h2><div class="prose"><p>MLB's leverage index for the moment, square-rooted and divided by ${w.clutch.norm.toFixed(3)} so the average plate appearance is exactly ×1.00. Blowouts drop to about ×0.3; a tie game in the 9th is about ×1.8. Caps rise by inning: ×2.0 through the 6th, then ×2.1, ×2.2, ×2.3 in the 9th, ×2.4 in the 10th–11th, ×2.5 after. Floor ×0.25. Postseason ×${w.clutch.post} on top.</p></div></section>
+    <section><h2>6. Base stealing (separate grade)</h2>${wl(steal)}<div class="note">Break-even success rate stealing 2nd: about 71%.</div></section>
+    <section><h2>Grades</h2>${legendHTML("Percentile among qualified hitters (300+ PA) that season:")}
+      ${wl(META.cats.map(c => [c.label, cdef[c.key] || ""]))}
+      <div class="label" style="margin-top:8px">Game grades (percentile of every batter's games)</div>${wl(META.game_cuts.map(([g, c]) => [g, `${sgn(c, 1)} or better`]))}</section>`;
+}
+
+/* ---------- routing ---------- */
+function setSeason(y) { SEASON = y; save("bb:season", y); $("#seasonSel").value = y; route(); }
+async function route() {
+  const h = location.hash.replace(/^#\/?/, "");
+  const [path] = h.split("?");
+  const parts = path.split("/");
+  const nav = parts[0] === "player" ? "" : (parts[0] || "home");
+  document.querySelectorAll("[data-nav]").forEach(a => a.toggleAttribute("aria-current", a.dataset.nav === nav));
+  setStatus("Loading…");
+  try {
+    if (parts[0] === "leaders") await viewLeaders();
+    else if (parts[0] === "player") await viewPlayer(+parts[1]);
+    else if (parts[0] === "compare") await viewCompare();
+    else if (parts[0] === "scoring") viewScoring();
+    else await viewHome();
+    setStatus("");
+  } catch (e) { console.error(e); setStatus("Couldn't load data: " + e.message, true); }
+  window.scrollTo({ top: 0 });
+}
+(async function init() {
+  try { META = await getJSON("data/index.json"); } catch (e) { setStatus("Couldn't load data/index.json. Run tools/build_site.py first.", true); return; }
+  const sel = $("#seasonSel");
+  sel.innerHTML = META.seasons.slice().reverse().map(y => `<option value="${y}">${y}</option>`).join("");
+  const saved = load("bb:season", null);
+  SEASON = META.seasons.includes(saved) ? saved : META.seasons[META.seasons.length - 1];
+  sel.value = SEASON;
+  sel.onchange = () => setSeason(+sel.value);
+  $("#foot").textContent = `Data from the MLB Stats API. Built ${META.built}. Seasons ${META.seasons.join(", ")}.`;
+  window.addEventListener("hashchange", route);
+  route();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+# Raw downloads and caches (rebuilt by tools/fetch_pbp.py and tools/fetch_wp.py)
+data/pbp/
+data/wp/
+data/raw-*.json.gz
+data/season-*.json
+data/grades-*.json
+data/test-*.json
+__pycache__/
+.DS_Store
+.claude/
