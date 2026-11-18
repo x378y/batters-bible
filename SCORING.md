@@ -4,8 +4,7 @@ Every plate appearance (PA) gets a score:
 
 ```
 Quality      = pitch points + ending points + long-AB bonus + first-pitch HR bonus   (skill only)
-At-bat       = same, but a ball in play counts ½ contact grade + ½ what it became;
-               a quality at-bat (section 3b) can't go below zero
+At-bat       = Quality, but a quality at-bat (section 3b) can't go below zero
 Base         = At-bat + runner points + walk-off bonus
 Clutch score = Base × clutch multiplier (leverage)
 Season       = average per PA: Clutch score, Quality, Clutch gap, QAB%, Consistency
@@ -54,25 +53,24 @@ Why not use the fitted run values here: they reward luck (weak line drives +0.89
 hard fly balls −0.22 because warning-track outs). Grading the skill predicts next-season OPS at .358,
 grading the run value only .275.
 
-### What it became (*data*, half of the game score and season total)
+### Results grade (*data*, separate, not in the score)
 
-The Quality and Power grades use the contact grade alone. The game score and season total use
-½ contact grade + ½ the value of the result, net of runner points so a run isn't counted twice:
+Whether a ball in play fell for a hit doesn't change the score. It's its own grade, **Results**: the
+average value of what his balls in play turned into, net of runner points. Power high and Results low
+means he's been unlucky; the reverse means balls have been finding holes.
 
-| Result | Points |
+| Result | Value |
 |---|---|
 | Home run | +3.30 |
 | Triple | +2.90 |
 | Double | +1.97 |
 | Fielder's choice (batter safe) | +1.72 |
 | Single | +1.19 |
-| Force out | +0.52 (the runner put out is charged in runner points) |
+| Force out | +0.52 |
 | Out in play | −0.80 |
-| Ground into double play | −1.03 (plus −2.39 for the runner) |
-| Sac fly | −1.57 (runner points add back +0.98 RBI, +0.73 advance) |
-| Reached on error | contact grade only: the error doesn't help |
-
-Example: a hard line drive caught = ½ × 3.0 + ½ × −0.80 = **+1.10**. A pop-up out = ½ × −1.0 + ½ × −0.80 = **−0.90**.
+| Ground into double play | −1.03 |
+| Sac fly | −1.57 |
+| Reached on error | not counted |
 
 ### Other endings (*data*)
 
@@ -107,17 +105,17 @@ A PA is a **quality at-bat (QAB)** if any of these is true:
 If a QAB's at-bat points (pitches + contact + bonuses) come out below zero, they count as **zero**.
 Runner points still apply after that, so stranding runners still costs. About 6% of PAs get lifted.
 
-Average points by type of at-bat (bases empty, 2026):
+Average points by type of at-bat (bases empty, 2026, before the clutch multiplier):
 
 | At-bat | Points | | At-bat | Points |
 |---|---|---|---|---|
-| Home run | +5.23 | | Hard grounder out (95+) | +0.21 |
-| Double | +2.20 | | Medium contact out | −0.36 |
-| Walk | +2.08 | | Weak grounder out | −0.63 |
-| Single, hard-hit | +1.58 | | Pop-up out | −0.73 |
-| Hard line drive caught | +1.23 | | Strikeout, 3–4 pitches | −1.73 |
-| Hard fly ball caught | +0.69 | | Strikeout, 5–6 pitches | −1.51 |
-| Single, bloop (<80 mph) | +0.50 | | Strikeout, 7 pitches | +0.17 |
+| Home run | +5.58 | | Medium contact out | +0.04 |
+| Hard line drive caught | +3.20 | | Bloop single (<80 mph) | −0.26 |
+| Double | +2.37 | | Weak grounder out | −0.48 |
+| Hard fly ball caught | +2.10 | | Pop-up out | −0.82 |
+| Walk | +2.08 | | Strikeout, 3–4 pitches | −1.73 |
+| Hard grounder out | +1.07 | | Strikeout, 5–6 pitches | −1.51 |
+| | | | Strikeout, 7 pitches | +0.17 |
 | | | | Strikeout, 8+ pitches | +0.55 |
 
 ## 4. First-pitch home run (*choice*)
@@ -183,6 +181,7 @@ Pickoff errors (runner advances) don't count. Counts match MLB's official SB/CS 
 | Quality | Quality per PA |
 | Contact | Share of swings that make contact (bat-to-ball skill) |
 | Power | Average contact grade per ball in play (barrels, hard-hit) |
+| Results | Average value of what his balls in play turned into (hits vs. outs), not in the score |
 | Discipline | Pitch points + walk/strikeout points per PA |
 | Grind | Long-AB bonus per PA |
 | Run production | Runner points per PA |
@@ -208,14 +207,14 @@ Tiers (percentile among 300+ PA hitters that season): S 97+, A 85–96, B 65–8
 
 | Measure | Clutch score | Quality | Plain OPS |
 |---|---|---|---|
-| Matches same-season OPS | .659 | .592 | — |
-| 2025 value predicts 2026 OPS | .350 | .353 | .425 |
+| Matches same-season OPS | .633 | .592 | — |
+| 2025 value predicts 2026 OPS | .392 | .353 | .425 |
 | Same in odd vs even games | .320 | .542 | — |
 
 Clutch gap repeats very little (2025 vs 2026: .086). It describes who delivered this year, not a skill
 that carries over.
 
-v9 traded a little prediction (.391 → .350) so the season total reflects what actually happened.
+v9 tried scoring contact 50/50 with the result; that was reverted in favour of a separate Results grade.
 
 Removed in v8: pitcher multiplier (made scores less predictive at every strength tested), the 3-0 walk
 reduction (data showed no difference), the hand-built clutch table (replaced by leverage index).

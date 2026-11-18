@@ -14,7 +14,7 @@ TIERS = [(97, "S"), (85, "A"), (65, "B"), (40, "C"), (20, "D"), (8, "E"), (0, "F
 NON_CONTACT = {"bb", "bb30", "ibb", "hbp", "ci", "k_swing", "k_look_in", "k_look_out"}
 CATS = [  # key, label, format
     ("clutch", "Overall", "{:+.2f}"), ("quality", "Quality", "{:+.2f}"), ("contact", "Contact", "{:.1f}%"),
-    ("power", "Power", "{:+.2f}"), ("discipline", "Discipline", "{:+.2f}"), ("grind", "Grind", "{:+.2f}"),
+    ("power", "Power", "{:+.2f}"), ("results", "Results", "{:+.2f}"), ("discipline", "Discipline", "{:+.2f}"), ("grind", "Grind", "{:+.2f}"),
     ("runs", "Run production", "{:+.2f}"), ("steal", "Base stealing", "{:+.1f}"),
     ("gap", "Clutch", "{:+.2f}"), ("qab", "QAB%", "{:.0f}%"), ("cons", "Consistency", "{:.0f}%"),
 ]
@@ -70,6 +70,7 @@ def line(xs, steals, W):
         steal=600 * st_pts / len(xs), steal_total=st_pts,
         contact=100 * (1 - whiffs / swings) if swings else 0.0,
         power=st.mean(x["end8"] for x in bip) if bip else 0.0,
+        results=st.mean(x["result8"] for x in bip if x.get("result8") is not None) if any(x.get("result8") is not None for x in bip) else 0.0,
         clutch=st.mean(x["score"] for x in xs), quality=st.mean(x["quality"] for x in xs),
         discipline=st.mean(x["pitch8"] + (x["end8"] if x["ek"] in NON_CONTACT else 0) for x in xs),
         grind=st.mean(x["long8"] for x in xs), runs=st.mean(x["runner8"] for x in xs),

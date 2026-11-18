@@ -50,7 +50,7 @@ def pa_row(x):
     """One PA for the site. Zero / empty fields are left out to keep files small (the page fills them back in)."""
     h = x.get("hit") or {}
     full = dict(i=x["inn"], t=1 if x["top"] else 0, o=x["outs"], b=x["bmask"], mg=x["margin"], et=x["et"], ek=x["ek"],
-                n=x["n"], p=r(x["pitch8"]), e=r(x["end8"]), ct=r(x["contact8"]), ab=r(x["ab8"]), lg=r(x["long8"]), fp=r(x["fphr8"]), ru=r(x["runner8"]),
+                n=x["n"], p=r(x["pitch8"]), e=r(x["end8"]), rs=r(x["result8"]), ab=r(x["ab8"]), lg=r(x["long8"]), fp=r(x["fphr8"]), ru=r(x["runner8"]),
                 wo=1 if x["walkoff"] else 0, bs=r(x["base"]), m=r(x["m"]), s=r(x["score"]), li=x.get("li"),
                 pc="".join(f"{b}{s}{l}{o}" for b, s, l, o in x["pc"]), ev=h.get("ev"), la=h.get("la"),
                 rbi=x["rbi_lt2"] + x["rbi_2"], r2=x["rbi_2"], adv=x["adv_bases"], sr=x["str_reg"], s3=x["str3"],

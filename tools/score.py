@@ -382,12 +382,12 @@ def score_v8(x, W):
     long = W["long"]["at7"] + W["long"]["per_extra"] * (n - 7) if n >= 7 else 0.0
     fphr = W["fphr"] if (x["et"] == "home_run" and n == 1) else 0.0
     quality = pitch + end + long + fphr            # skill only: how good the at-bat was
-    # Game/season score: contact is half how hard it was hit, half what it turned into (hit or out)
+    # Whether a ball in play fell for a hit is tracked separately (Results grade), not in the score
     bip = x["ek"] in SKILL_CONTACT
-    contact = 0.5 * end + 0.5 * W["result"].get(x["et"], end) if bip and "result" in W else end
+    result = W.get("result", {}).get(x["et"]) if bip else None
     hard = bip and (x.get("hit") or {}).get("ev") is not None and x["hit"]["ev"] >= 95
     qab = quality >= 0.5 or n >= 7 or hard or (x["batter_out"] and x["adv_bases"] > 0)
-    at_bat = pitch + contact + long + fphr
+    at_bat = quality
     if qab:
         at_bat = max(0.0, at_bat)                  # a good at-bat never counts against him
     r = W["runner"]
@@ -399,7 +399,7 @@ def score_v8(x, W):
     if x["gtype"] != "R":
         m *= c["post"]
     m = max(0.25, min(m, inning_cap(x["inn"])))  # floor: even garbage time counts a little
-    x.update(pitch8=pitch, end8=end, contact8=contact, ab8=at_bat, long8=long, fphr8=fphr, quality=quality,
+    x.update(pitch8=pitch, end8=end, result8=result, ab8=at_bat, long8=long, fphr8=fphr, quality=quality,
              runner8=runner, base=base, m=m, score=base * m, qab=qab, bad=quality <= -1)
     return x
 
