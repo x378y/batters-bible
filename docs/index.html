@@ -85,7 +85,9 @@ section { display: flex; flex-direction: column; gap: 10px; }
 .tile { border-radius: 8px; padding: 12px 6px; text-align: center; }
 .tile .k { font-size: 12px; } .tile .L { font-family: var(--font-display); font-size: 34px; font-weight: 700; line-height: 1.05; }
 .tile .v { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; } .tile .p { font-size: 11px; }
-.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: 8px; }
+.tiles { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 560px) { .tiles { gap: 5px; } .tiles .tile { padding: 9px 2px; } .tiles .tile .k { font-size: 10.5px; line-height: 1.2; min-height: 2.4em; display: flex; align-items: center; justify-content: center; }
+  .tiles .tile .L { font-size: 26px; } .tiles .tile .v { font-size: 11px; } .tiles .tile .p { font-size: 10px; } }
 .hdr { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; }
 .hdr .nm { font-family: var(--font-display); font-size: 30px; font-weight: 700; line-height: 1.05; }
 .hdr .sub { font-size: 13px; color: var(--muted); }
@@ -269,7 +271,9 @@ function tileHTML(key, label, line, big) {
   return `<div class="tile g g${g}${big ? " ov" : ""}" title="${esc(label)}: ${esc(fmtCat(key, v))}, ${ord(p)} percentile"><div class="k">${esc(label)}</div><div class="L">${g}</div><div class="v">${esc(fmtCat(key, v))}${key === "clutch" ? "/PA" : ""}</div><div class="p">${ord(p)} pct</div></div>`;
 }
 function gradeCard(p, line, S, mode) {
-  const others = META.cats.filter(c => c.key !== "clutch" && line[c.key + "_g"] != null);
+  // Top row: how he hits. Bottom row: what it produced, in what spots, how often, plus running.
+  const CARD_ORDER = ["quality", "contact", "power", "discipline", "grind", "runs", "gap", "qab", "cons", "steal"];
+  const others = CARD_ORDER.map(k => META.cats.find(c => c.key === k)).filter(c => c && line[c.key + "_g"] != null);
   const sub = [p.team, `${line.pa} PA`, p.ops != null && mode === "reg" ? `${p.ops.toFixed(3)} OPS` : null,
     mode === "reg" ? `${line.sb} SB, ${line.cs} CS` : "Postseason"].filter(Boolean).join(" · ");
   return `<div class="card">
