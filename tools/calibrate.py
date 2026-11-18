@@ -202,20 +202,32 @@ def main():
     for f, c, u in zip(feats[1:], coef[:-1], free[1:-1]):
         print(f"| {f} | {c:+.3f} | {c * S:+.2f} | {u * S:+.2f} |")
 
+    # 7b. what each ball-in-play RESULT is worth on its own (net of runner points, so a run isn't counted twice)
+    runner_runs = lambda x: sum(c * x[f] for f, c in zip(feats[1:], coef[:-1]))
+    res = collections.defaultdict(list)
+    for x in reg:
+        if x["ek"] in SKILL_CONTACT and x["et"] != "field_error":   # an error doesn't help the batter
+            res[x["et"]].append(x["rv"] - runner_runs(x))
+    W["result"] = {k: st.mean(v) * S for k, v in res.items() if len(v) >= 50}
+    print("\n## Step 7: ball-in-play result values (net of runner points), used for half of the game score")
+    print("| Result | Balls | Points |\n|---|---|---|")
+    for k, v in sorted(W["result"].items(), key=lambda kv: -kv[1]):
+        print(f"| {k} | {len(res[k]):,} | {v:+.2f} |")
+
     # 8. long AB and first-pitch HR bonuses, sized from the fitted values
     def pre_bonus(x):
         pts = sum(W["pitch"].get(pitch_cat(*p) or "", 0) for p in x["pc"][:-1])
         return pts + W["ending"].get(x["ek"], 0)
     k7 = st.mean(pre_bonus(x) for x in reg if x["ek"].startswith("k_") and x["n"] == 7)
     k8 = st.mean(pre_bonus(x) for x in reg if x["ek"].startswith("k_") and x["n"] == 8)
-    b7 = round(-k7, 2)
-    step = round(max(0.25, -k8 + 0.25 - b7), 2)
+    b7 = round(-k7 + 0.25, 2)          # a 7-pitch strikeout nets about +0.25: working the count is a good AB
+    step = round(max(0.25, -k8 + 0.5 - b7), 2)
     W["long"] = dict(at7=b7, per_extra=step)
     W["fphr"] = round(b7 + step, 2)
     W["walkoff"] = 1.0
     print("\n## Step 8: preference bonuses")
-    print(f"Average 7-pitch strikeout before bonus: {k7:+.2f} → 7-pitch bonus {b7:+.2f} (brings it to ~0)")
-    print(f"Average 8-pitch strikeout before bonus: {k8:+.2f} → +{step:.2f} per pitch after 7 (8-pitch K nets ≈ +0.25)")
+    print(f"Average 7-pitch strikeout before bonus: {k7:+.2f} → 7-pitch bonus {b7:+.2f} (nets about +0.25)")
+    print(f"Average 8-pitch strikeout before bonus: {k8:+.2f} → +{step:.2f} per pitch after 7 (8-pitch K nets about +0.5)")
     print(f"First-pitch home run bonus = the 8-pitch bonus = +{W['fphr']:.2f} (attacking rewarded like grinding)")
     fp = [x for x in reg if x["et"] == "home_run" and x["n"] == 1]
     print(f"First-pitch HRs in the data: {len(fp):,} of {sum(x['et'] == 'home_run' for x in reg):,} HRs")

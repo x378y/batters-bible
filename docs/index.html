@@ -267,7 +267,7 @@ const isFollowed = id => following.includes(id);
 function toggleFollow(id) { following = isFollowed(id) ? following.filter(x => x !== id) : [...following, id]; save("bb:following", following); }
 
 async function season(yr) { return getJSON(`data/season-${yr}.json`); }
-const PA_DEFAULTS = { t: 0, o: 0, b: 0, mg: 0, et: "", ek: "", p: 0, e: 0, lg: 0, fp: 0, ru: 0, wo: 0, bs: 0, m: 1, li: null, pc: "", ev: null, la: null,
+const PA_DEFAULTS = { t: 0, o: 0, b: 0, mg: 0, et: "", ek: "", p: 0, e: 0, ct: 0, ab: 0, lg: 0, fp: 0, ru: 0, wo: 0, bs: 0, m: 1, li: null, pc: "", ev: null, la: null,
   rbi: 0, r2: 0, adv: 0, sr: 0, s3: 0, po: 0, q: 0 };
 async function playerLog(yr, id) {
   const log = await getJSON(`data/p/${yr}/${id}.json`);
@@ -415,9 +415,14 @@ function paDetail(pa) {
     const last = i === pcs.length - 1, cat = last ? null : pitchCat(b, s, l, o), v = cat ? (w.pitch[cat] ?? 0) : null;
     return `<tr><td class="l">${i + 1}</td><td class="l">${b}-${s}</td><td class="l">${LOC[l]}</td><td class="l">${ACT[o]}</td><td class="${last ? "" : cls(v)}" title="${esc(cat ? PITCH_LABEL[cat] : "")}">${last ? "ending →" : sgn(v)}</td></tr>`;
   }).join("");
-  const r = w.runner, parts = [["Pitches before the last", pa.p], [EK[pa.ek] || pa.ek, pa.e]];
+  const r = w.runner, parts = [["Pitches before the last", pa.p]];
+  const bip = w.result && pa.ev != null || (w.result && Math.abs(pa.ct - pa.e) > 0.005);
+  if (bip) { parts.push([`How hard it was hit: ${EK[pa.ek] || pa.ek} (half of ${sgn(pa.e)})`, pa.e / 2]); parts.push([`What it became: ${pa.et.replace(/_/g, " ")} (half)`, pa.ct - pa.e / 2]); }
+  else parts.push([EK[pa.ek] || pa.ek, pa.e]);
   if (pa.lg) parts.push([`Long at-bat (${pa.n} pitches)`, pa.lg]);
   if (pa.fp) parts.push(["First-pitch home run", pa.fp]);
+  const lift = pa.ab - (pa.p + pa.ct + pa.lg + pa.fp);
+  if (lift > 0.005) parts.push(["Good at-bat: can't go below zero", lift]);
   const rbi1 = pa.rbi - pa.r2;
   if (rbi1) parts.push([`RBI, 0–1 outs (${rbi1} × ${sgn(r.rbi_lt2)})`, rbi1 * r.rbi_lt2]);
   if (pa.r2) parts.push([`RBI, 2 outs (${pa.r2} × ${sgn(r.rbi_2)})`, pa.r2 * r.rbi_2]);
@@ -437,9 +442,9 @@ function paDetail(pa) {
 }
 function gameRows(g, gi) {
   const pas = g.pas.map((pa, j) => `<tr class="click" data-pa="${gi}-${j}"><td class="l">${esc(situation(pa))}</td><td class="l">${paResult(pa)}</td><td>${pa.n}</td>
-      <td class="${cls(pa.p + pa.e + pa.lg + pa.fp)}">${sgn(pa.p + pa.e + pa.lg + pa.fp)}</td><td class="${cls(pa.ru)}">${sgn(pa.ru + (pa.wo ? META.weights.walkoff : 0))}</td>
+      <td class="${cls(pa.ab)}">${sgn(pa.ab)}${pa.q ? ' <span class="note">QAB</span>' : ""}</td><td class="${cls(pa.ru)}">${sgn(pa.ru + (pa.wo ? META.weights.walkoff : 0))}</td>
       <td>×${pa.m.toFixed(2)}</td><td class="${cls(pa.s)}"><b>${sgn(pa.s)}</b></td></tr><tr class="sub" id="pd-${gi}-${j}" hidden><td colspan="7"></td></tr>`).join("");
-  return `<table class="pas"><thead><tr><th class="l">Situation</th><th class="l">Result</th><th>Pitches</th><th>Quality</th><th>Runners</th><th>Clutch</th><th>Score</th></tr></thead><tbody>${pas}</tbody></table>`;
+  return `<table class="pas"><thead><tr><th class="l">Situation</th><th class="l">Result</th><th>Pitches</th><th>At-bat</th><th>Runners</th><th>Clutch</th><th>Score</th></tr></thead><tbody>${pas}</tbody></table>`;
 }
 async function seasonsTable(id) {
   const rows = [];
@@ -556,19 +561,23 @@ function viewScoring() {
     contact: "Share of swings that make contact (bat-to-ball skill)", power: "Average contact grade per ball in play (barrels, hard-hit)",
     discipline: "Pitch decisions plus walks and strikeouts, per PA", grind: "Long-at-bat bonus per PA", runs: "Runner points per PA (RBIs, moving runners, stranding)",
     steal: "Steal points per 600 PA (separate from the season total)", gap: "Leverage-weighted average minus plain average: better or worse in big spots",
-    qab: "Share of PAs that were quality at-bats (Quality +0.5 or more, or a productive out)", cons: "Share of games (2+ PA) where at least half his PAs were quality at-bats" };
+    qab: "Share of PAs that were quality at-bats: 7+ pitches, 95+ mph contact, a productive out, or Quality +0.5 or more", cons: "Share of games (2+ PA) where at least half his PAs were quality at-bats" };
   $("#view").innerHTML = `<section><h1>How a plate appearance is scored</h1>
     <div class="prose"><p>Every plate appearance gets points for the pitches he saw, how it ended, and what happened to the runners. The total is multiplied by how much the moment mattered. Values were fitted on ${w.pas.toLocaleString()} regular-season plate appearances (${w.seasons.join("–")}). The scale is 1 run = ${S.toFixed(2)} points, so a walk is +1.5.</p></div>
-    <div class="formula">Quality      = pitch points + ending + long-AB bonus + first-pitch HR bonus
-Base         = Quality + runner points + walk-off
+    <div class="formula">Quality      = pitch points + ending + long-AB bonus + first-pitch HR bonus   (skill: how good the at-bat was)
+At-bat       = same, but a ball in play counts half how hard it was hit, half what it became
+               (a quality at-bat can't go below zero)
+Base         = At-bat + runner points + walk-off
 Score        = Base × clutch multiplier
 Season total = sum of every PA's score</div></section>
     <section><h2>1. Every pitch before the last one</h2><div class="prose"><p>Each pitch is worth how much better or worse the count got than what usually happens on a pitch in that same spot and count. Umpire mistakes count as 0.</p></div>
       ${wl(pitchOrder.map(k => [PITCH_LABEL[k] || k, w.pitch[k]]))}</section>
     <section><h2>2. How it ends</h2><div class="prose"><p>A ball in play is graded on exit velocity and launch angle, not on whether it fell for a hit. That rewards the repeatable skill instead of luck.</p></div>
       <div class="label">Contact</div>${wl(contact.map(k => [EK[k], w.ending[k]]))}
+      <div class="prose" style="margin-top:8px"><p>In the game score and season total, a ball in play counts half its contact grade and half what it turned into. The Quality and Power grades use the contact grade alone.</p></div>
+      <div class="label">What it became (half of the score)</div>${wl(Object.entries(w.result || {}).sort((a, b) => b[1] - a[1]).map(([k, v]) => [k.replace(/_/g, " "), v]))}
       <div class="label" style="margin-top:8px">Other endings</div>${wl(other.map(k => [EK[k], w.ending[k]]).concat([["Strikeout looking, off the plate", w.ending.k_look_in / 2], ["Strikeout swinging adds that pitch's whiff value", "+ whiff"]]))}</section>
-    <section><h2>3. Bonuses</h2>${wl([["7-pitch at-bat", w.long.at7], ["Each pitch after 7", w.long.per_extra], ["First-pitch home run", w.fphr], ["Walk-off", w.walkoff]])}</section>
+    <section><h2>3. Good at-bats and bonuses</h2><div class="prose"><p>A quality at-bat never counts against him: 7 or more pitches, a ball hit 95+ mph, a productive out, or Quality of +0.5 or more. If one of those adds up to less than zero before runner points, it counts as zero.</p></div>${wl([["7-pitch at-bat", w.long.at7], ["Each pitch after 7", w.long.per_extra], ["First-pitch home run", w.fphr], ["Walk-off", w.walkoff]])}</section>
     <section><h2>4. Runners</h2><div class="prose"><p>Only movement the batter caused counts: no steals, wild pitches, pickoffs or errors. The automatic runner in extra innings isn't counted as stranded.</p></div>
       ${wl([["RBI, 0–1 outs", w.runner.rbi_lt2], ["RBI, 2 outs", w.runner.rbi_2], ["Each base a runner moves up", w.runner.adv_bases], ["Runner stranded (batter out)", w.runner.str_reg], ["Stranded on 3rd, fewer than 2 outs", w.runner.str3], ["Runner put out on the play", w.runner.putout]])}</section>
     <section><h2>5. Clutch multiplier</h2><div class="prose"><p>MLB's leverage index for the moment, square-rooted and divided by ${w.clutch.norm.toFixed(3)} so the average plate appearance is exactly ×1.00. Blowouts drop to about ×0.3; a tie game in the 9th is about ×1.8. Caps rise by inning: ×2.0 through the 6th, then ×2.1, ×2.2, ×2.3 in the 9th, ×2.4 in the 10th–11th, ×2.5 after. Floor ×0.25. Postseason ×${w.clutch.post} on top.</p></div></section>

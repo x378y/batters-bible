@@ -87,10 +87,25 @@
 | str3 | -0.341 | -1.54 | -1.81 |
 | putout | -0.528 | -2.39 | -2.52 |
 
+## Step 7: ball-in-play result values (net of runner points), used for half of the game score
+| Result | Balls | Points |
+|---|---|---|
+| home_run | 11,123 | +3.30 |
+| triple | 1,297 | +2.90 |
+| double | 15,116 | +1.97 |
+| fielders_choice | 770 | +1.72 |
+| single | 50,874 | +1.19 |
+| force_out | 6,553 | +0.52 |
+| field_out | 146,466 | -0.80 |
+| grounded_into_double_play | 6,173 | -1.03 |
+| fielders_choice_out | 582 | -1.14 |
+| sac_fly | 2,551 | -1.57 |
+| double_play | 750 | -1.71 |
+
 ## Step 8: preference bonuses
-Average 7-pitch strikeout before bonus: -1.21 → 7-pitch bonus +1.21 (brings it to ~0)
-Average 8-pitch strikeout before bonus: -1.16 → +0.25 per pitch after 7 (8-pitch K nets ≈ +0.25)
-First-pitch home run bonus = the 8-pitch bonus = +1.46 (attacking rewarded like grinding)
+Average 7-pitch strikeout before bonus: -1.21 → 7-pitch bonus +1.46 (nets about +0.25)
+Average 8-pitch strikeout before bonus: -1.16 → +0.25 per pitch after 7 (8-pitch K nets about +0.5)
+First-pitch home run bonus = the 8-pitch bonus = +1.71 (attacking rewarded like grinding)
 First-pitch HRs in the data: 2,122 of 11,136 HRs
 
 ## Step 9: clutch multiplier = √(leverage index) ÷ league average

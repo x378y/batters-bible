@@ -381,16 +381,28 @@ def score_v8(x, W):
     n = x["n"]
     long = W["long"]["at7"] + W["long"]["per_extra"] * (n - 7) if n >= 7 else 0.0
     fphr = W["fphr"] if (x["et"] == "home_run" and n == 1) else 0.0
-    quality = pitch + end + long + fphr
+    quality = pitch + end + long + fphr            # skill only: how good the at-bat was
+    # Game/season score: contact is half how hard it was hit, half what it turned into (hit or out)
+    bip = x["ek"] in SKILL_CONTACT
+    contact = 0.5 * end + 0.5 * W["result"].get(x["et"], end) if bip and "result" in W else end
+    hard = bip and (x.get("hit") or {}).get("ev") is not None and x["hit"]["ev"] >= 95
+    qab = quality >= 0.5 or n >= 7 or hard or (x["batter_out"] and x["adv_bases"] > 0)
+    at_bat = pitch + contact + long + fphr
+    if qab:
+        at_bat = max(0.0, at_bat)                  # a good at-bat never counts against him
     r = W["runner"]
     runner = sum(r[f] * x[f] for f in r)
     walkoff = W["walkoff"] if x["walkoff"] else 0.0
-    base = quality + runner + walkoff
+    base = at_bat + runner + walkoff
     c = W["clutch"]
     m = (x["li"] ** c["power"] / c["norm"]) if x.get("li") is not None else 1.0
     if x["gtype"] != "R":
         m *= c["post"]
     m = max(0.25, min(m, inning_cap(x["inn"])))  # floor: even garbage time counts a little
-    x.update(pitch8=pitch, end8=end, long8=long, fphr8=fphr, quality=quality, runner8=runner, base=base, m=m,
-             score=base * m, qab=quality >= 0.5 or (x["batter_out"] and x["adv_bases"] > 0), bad=quality <= -1)
+    x.update(pitch8=pitch, end8=end, contact8=contact, ab8=at_bat, long8=long, fphr8=fphr, quality=quality,
+             runner8=runner, base=base, m=m, score=base * m, qab=qab, bad=quality <= -1)
     return x
+
+
+SKILL_CONTACT = {"barrel+impact", "barrel", "hard ld+impact", "hard ld", "hard fb+impact", "hard fb", "hard gb",
+                 "med ld", "med", "weak ld", "weak gb", "weak fb", "popup"}
