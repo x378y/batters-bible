@@ -11,10 +11,10 @@ Python 3 with `numpy` (and `certifi` on Macs without system certificates).
 
 ```bash
 cd tools
-python3 fetch_pbp.py 2025 2026      # play-by-play for every game (skips games already saved)
-python3 fetch_wp.py 2025 2026       # win probability and leverage index per play
-python3 calibrate.py > ../data/calibration.md   # fit point values -> data/weights.json
-python3 build_site.py               # score everything -> docs/data/
+python3 fetch_pbp.py 2021 2026      # play-by-play for every game, first to last season (skips saved games)
+python3 fetch_wp.py 2021 2026       # win probability and leverage index per play
+python3 calibrate.py > ../data/calibration.md   # fit point values on 2025-2026 -> data/weights.json
+python3 build_site.py               # score every downloaded season with those values -> docs/data/
 ```
 
 ## Running locally

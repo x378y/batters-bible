@@ -60,9 +60,9 @@ def pitch_cat(b, s, loc, o):
     return None
 
 
-def load():
+def load(seasons=SEASONS):
     pas = []
-    for yr in SEASONS:
+    for yr in seasons:
         ppl, _ = people(yr)
         wp = {}
         folder = os.path.join(ROOT, "wp", str(yr))
@@ -84,7 +84,7 @@ def run_values(pas):
     halves = collections.defaultdict(list)
     for x in pas:
         if x["gtype"] == "R":
-            halves[(x["pk"], x["inn"], x["top"])].append(x)
+            halves[(x["pk"], x.get("einn", x["inn"]), x["top"])].append(x)
     re_runs = collections.defaultdict(list)
     for (pk, inn, top), xs in halves.items():
         xs.sort(key=lambda x: x["k"])

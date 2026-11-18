@@ -8,3 +8,4 @@ data/test-*.json
 __pycache__/
 .DS_Store
 .claude/
+data/fetch-*.log

@@ -10,14 +10,13 @@ Reads the downloaded play-by-play (tools/fetch_pbp.py, tools/fetch_wp.py) and we
 """
 import collections, json, os, shutil, statistics as st, time
 from datetime import datetime, timezone
-from calibrate import load, run_values
+from calibrate import load
 from score import load_weights, score_v8, people, ROOT
 from grades import CATS, TIERS, MIN_PA, NON_CONTACT, grade, line, steal_counts, pulled, ranking, pct_of
 from fetch_pbp import get, API
 
 SITE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "docs", "data")
 MIN_SHOW = 15
-POST_MIN = 20     # postseason PA to be in the postseason grading pool
 HITS = {"single": "1B", "double": "2B", "triple": "3B", "home_run": "HR"}
 NOT_AB = {"walk", "intent_walk", "hit_by_pitch", "catcher_interf", "sac_fly", "sac_bunt", "sac_fly_double_play",
           "sac_bunt_double_play"}
@@ -65,25 +64,21 @@ def pa_row(x):
 def main():
     t0 = time.time()
     W = load_weights()
-    pas = load(); run_values(pas)
-    for x in pas:
-        score_v8(x, W)
-    seasons = sorted({x["season"] for x in pas})
+    seasons = sorted(int(d) for d in os.listdir(os.path.join(ROOT, "pbp"))
+                     if d.isdigit() and os.path.exists(os.path.join(ROOT, f"season-{d}.json")))
     if os.path.isdir(SITE):
         shutil.rmtree(SITE)
     os.makedirs(SITE)
 
-    # game-score tiers from every regular-season player-game
-    gsum = collections.defaultdict(float)
-    for x in pas:
-        if x["gtype"] == "R":
-            gsum[(x["season"], x["pk"], x["bat"])] += x["score"]
-    gs = sorted(gsum.values())
-    game_cuts = [[g, round(gs[min(len(gs) - 1, round(c / 100 * (len(gs) - 1)))], 2)] for c, g in TIERS]
-
+    gsum = collections.defaultdict(float)   # every regular-season player-game, for the game-score tiers
     out_seasons = []
-    for yr in seasons:
-        _, bat = people(yr)
+    for yr in seasons:   # one season at a time, to keep memory down
+        pas = load([yr])
+        for x in pas:
+            score_v8(x, W)
+            if x["gtype"] == "R":
+                gsum[(yr, x["pk"], x["bat"])] += x["score"]
+        ppl, bat = people(yr)
         teams = {t["id"]: t["abbreviation"] for t in get(f"{API}/teams?sportId=1&season={yr}")["teams"]}
         games = {g["pk"]: g for g in json.load(open(os.path.join(ROOT, "pbp", str(yr), "games.json")))}
         steals = steal_counts(yr)
@@ -99,9 +94,9 @@ def main():
         cuts = {k: [[g, r(dist[k][min(len(dist[k]) - 1, round(c / 100 * (len(dist[k]) - 1)))], 3)] for c, g in TIERS]
                 for k, _, _ in CATS}
 
-        # postseason lines are ranked against other postseason hitters (same pull toward the regular-season median)
+        # postseason lines are ranked against every postseason hitter (same pull toward the regular-season median)
         post_lines = {b: line(px, {}, W) for b, xs in mine.items() if (px := [x for x in xs if x["gtype"] != "R"])}
-        post_pool = [l for l in post_lines.values() if l["pa"] >= POST_MIN]
+        post_pool = list(post_lines.values())
         post_rank = {k: sorted(pulled(l, k, med) for l in post_pool) for k, _, _ in CATS}
 
         def graded(l, rank=rank):
@@ -117,6 +112,8 @@ def main():
         for b, xs in mine.items():
             if b is None:
                 continue
+            if ppl.get(b, {}).get("pos") == "P" and len(xs) < 100:
+                continue   # pitchers batting (NL before the 2022 universal DH)
             xs.sort(key=lambda x: (x["date"], x["pk"], x["k"]))
             last = xs[-1]
             g = games[last["pk"]]
@@ -126,7 +123,7 @@ def main():
             if b in lines and lines[b]["pa"] >= MIN_SHOW:
                 row["reg"] = graded(lines[b])
             if b in post_lines:
-                pg = graded(post_lines[b], post_rank if len(post_pool) >= 20 else rank)
+                pg = graded(post_lines[b], post_rank)
                 pg.pop("steal", None); pg.pop("steal_p", None); pg.pop("steal_g", None)
                 row["post"] = pg
             if "reg" in row or "post" in row:
@@ -151,11 +148,14 @@ def main():
         with open(os.path.join(SITE, f"season-{yr}.json"), "w") as f:
             ld = dist["luck"]
             luck_cuts = [[n, r(ld[min(len(ld) - 1, round(c / 100 * (len(ld) - 1)))], 1)] for c, n in LUCK]
-            json.dump(dict(season=yr, min_pa=MIN_PA, post_min=POST_MIN, post_pool=len(post_pool), avg_total=r(lg_total, 1), qualified=len(qual), cuts=cuts, luck_cuts=luck_cuts,
+            json.dump(dict(season=yr, min_pa=MIN_PA, post_pool=len(post_pool), avg_total=r(lg_total, 1), qualified=len(qual), cuts=cuts, luck_cuts=luck_cuts,
                            players=players), f, separators=(",", ":"))
         out_seasons.append(yr)
+        pas = mine = reg = None   # free this season before loading the next
         print(f"{yr}: {len(players)} batters, {len(qual)} qualified ({time.time() - t0:.0f}s)", flush=True)
 
+    gs = sorted(gsum.values())
+    game_cuts = [[g, round(gs[min(len(gs) - 1, round(c / 100 * (len(gs) - 1)))], 2)] for c, g in TIERS]
     meta = dict(built=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"), seasons=out_seasons,
                 cats=[dict(key=k, label=l, fmt=f) for k, l, f in CATS], tiers=[[c, g] for c, g in TIERS],
                 game_cuts=game_cuts, min_pa=MIN_PA, min_show=MIN_SHOW, luck_bands=[[c, n] for c, n in LUCK],

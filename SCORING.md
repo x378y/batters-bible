@@ -206,8 +206,8 @@ PA ÷ (PA + 200), and the qualified pool is pulled the same way before the cut l
 20% of its distance from average, 100 PA a third, 300 PA 60%, 650 PA about 76%. Regulars barely move;
 hot or cold small samples land near C. Luck is ranked on its raw value.
 
-**Postseason** lines are ranked against that postseason's hitters with 20+ PA (same pull toward the
-regular-season median). Game grades use the same tiers, as percentiles of every regular-season player-game.
+**Postseason** lines are ranked against every hitter in that postseason, no minimum (same pull toward
+the regular-season median). Game grades use the same tiers, as percentiles of every regular-season player-game.
 
 ## 9. Consistency (separate stats)
 
@@ -219,7 +219,8 @@ regular-season median). Game grades use the same tiers, as percentiles of every 
 - Season: Clutch score per PA, Quality per PA, Clutch gap, QAB%, Consistency %, Baserunning; rating 100 = league average.
 - Grades S to F by percentile (section 8).
 - Regular season and postseason have separate leaderboards. Minimums: 15+ PA for season averages, 300 PA default leaderboard.
-- Position players pitching: those PAs are dropped.
+- Position players pitching: those PAs are dropped. Pitchers batting (NL before 2022) are hidden under 100 PA.
+- Seasons 2021–2026. Point values are fitted on 2025–2026 and applied to every season, so seasons compare on one scale; grades are percentiles within each season. The 2021 seven-inning doubleheaders count the 8th as extra innings (automatic runner, extra-inning clutch boost).
 
 ## 11. How well it works (2026 test, 300+ PA)
 

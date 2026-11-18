@@ -32,14 +32,15 @@ def get(url, tries=5):
 
 def games(season):
     d = get(f"{API}/schedule?sportId=1&season={season}&gameType=R,F,D,L,W"
-            "&fields=dates,games,gamePk,gameType,officialDate,status,codedGameState,teams,away,home,team,id")
+            "&fields=dates,games,gamePk,gameType,officialDate,status,codedGameState,teams,away,home,team,id,scheduledInnings")
     out = {}
     for dt in d.get("dates", []):
         for g in dt["games"]:
             if g["status"].get("codedGameState") != "F":
                 continue
             out[g["gamePk"]] = dict(pk=g["gamePk"], type=g["gameType"], date=g["officialDate"],
-                                    away=g["teams"]["away"]["team"]["id"], home=g["teams"]["home"]["team"]["id"])
+                                    away=g["teams"]["away"]["team"]["id"], home=g["teams"]["home"]["team"]["id"],
+                                    sched=g.get("scheduledInnings") or 9)
     return out
 
 

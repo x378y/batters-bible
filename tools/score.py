@@ -195,6 +195,7 @@ def game_pas(g):
     out, half, bases, outs, score, auto = [], None, {}, 0, [0, 0], set()
 
     AUTO = -1  # placeholder for the automatic runner until a play names him
+    sched = game.get("sched") or 9   # 7 for the 2021 seven-inning doubleheaders
 
     def resolve(seg, bases):
         # the API doesn't list the automatic runner until he moves; swap the placeholder for his real id
@@ -212,7 +213,7 @@ def game_pas(g):
     for k, p in enumerate(plays):
         if (p["inn"], p["top"]) != half:
             half, bases, outs, auto = (p["inn"], p["top"]), {}, 0, {AUTO}
-            if game["type"] == "R" and p["inn"] >= 10:
+            if game["type"] == "R" and p["inn"] > sched:   # automatic runner in regular-season extras
                 bases["2B"] = AUTO
         pitches = p["pitches"]
         F = pitches[-1]["i"] if pitches else None
@@ -269,13 +270,14 @@ def game_pas(g):
             la = long_ab(len(pitches))
             # walk-off
             a_after, h_after = p["a"] or 0, p["h"] or 0
-            walkoff = 1.0 if (bat_home and p["inn"] >= 9 and k == len(plays) - 1 and h_after > a_after
+            walkoff = 1.0 if (bat_home and p["inn"] >= sched and k == len(plays) - 1 and h_after > a_after
                               and score[1] <= score[0] and p["et"] not in OUT_EVENTS - {"sac_fly"}) else 0.0
-            cm, cap = clutch(p["inn"], game["type"], bs - os_, snap)
+            einn = p["inn"] + 9 - sched   # inning on a 9-inning scale (8th of a 7-inning game = 10th)
+            cm, cap = clutch(einn, game["type"], bs - os_, snap)
             out.append(dict(pk=game["pk"], date=game["date"], gtype=game["type"], bat=p["bat"], pit=p["pit"],
                             et=p["et"], kind=kind, n=len(pitches), pitch=pp, end=ep, long=la, raw=pp + ep + la,
                             run=run_pts, walkoff=walkoff, cm=cm, cap=cap, outs=outs_before, on=len(snap),
-                            batter_out=batter_out, adv=sum(adv.values()), stranded=stranded, inn=p["inn"],
+                            batter_out=batter_out, adv=sum(adv.values()), stranded=stranded, inn=p["inn"], einn=einn,
                             margin=bs - os_, **det, **facts))
         for s in fin_segs:
             apply(s, bases)
@@ -403,7 +405,7 @@ def score_v8(x, W):
     m = (x["li"] ** c["power"] / c["norm"]) if x.get("li") is not None else 1.0
     if x["gtype"] != "R":
         m *= c["post"]
-    m = max(0.25, min(m, inning_cap(x["inn"])))  # floor: even garbage time counts a little
+    m = max(0.25, min(m, inning_cap(x.get("einn", x["inn"]))))  # floor: even garbage time counts a little
     x.update(pitch8=pitch, end8=end, result8=result, luck8=luck, xhit8=xhit, ab8=at_bat, long8=long, fphr8=fphr, quality=quality,
              runner8=runner, base=base, m=m, score=base * m, qab=qab, bad=quality <= -1)
     return x
