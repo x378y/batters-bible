@@ -145,7 +145,6 @@ section { display: flex; flex-direction: column; gap: 10px; }
 .lt th:first-child, .lt td:first-child { width: 48px; min-width: 48px; max-width: 48px; }
 .lt th:nth-child(2), .lt td:nth-child(2) { position: sticky; left: 48px; background: var(--surface); box-shadow: inset -1px 0 0 var(--line); }
 .lt td:nth-child(2) { z-index: 1; } .lt th:nth-child(2) { z-index: 3; box-shadow: inset -1px 0 0 var(--line), inset 0 -1px 0 var(--line); }
-.lt tbody tr:hover td:nth-child(-n+2) { background: var(--accent-soft); }
 @media (max-width: 600px) {   /* phones: narrower pinned columns, team under the name */
   .lt th:first-child, .lt td:first-child { width: 34px; min-width: 34px; max-width: 34px; }
   .lt th:nth-child(2), .lt td:nth-child(2) { left: 34px; max-width: 118px; }
